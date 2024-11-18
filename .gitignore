@@ -23,6 +23,8 @@ builds/*
 .terraform/*
 .terraform.lock.hcl
 terraform.tfstate*
+terraform.tfvars
+backend.tf
 
 # .tfstate files
 # *.tfstate

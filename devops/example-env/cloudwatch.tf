@@ -27,3 +27,10 @@ resource "aws_cloudwatch_event_target" "sync_INSDC_step_function_event_target" {
   arn       = module.sync_INSDC.state_machine_arn
   role_arn  = module.sync_INSDC.role_arn
 }
+
+resource "aws_cloudwatch_log_group" "sync" {
+  name = "/aws/batch/job/${local.prefix}-Sync"
+  tags = {
+    Name = "/aws/batch/job/${local.prefix}-Sync",
+  }
+}

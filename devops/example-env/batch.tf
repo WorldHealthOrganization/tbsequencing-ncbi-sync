@@ -1,5 +1,5 @@
 module "jobs" {
-  source                        = "git::https://github.com/finddx/seq-treat-tbkb-terraform-modules.git//batch_job_definition_fargate?ref=batch_job_definition_fargate-v2.1"
+  source                        = "git::https://github.com/finddx/seq-treat-tbkb-terraform-modules.git//batch_job_definition_fargate?ref=batch_job_definition_fargate-v2.2"
   project_name                  = var.project_name
   module_name                   = var.module_name
   environment                   = var.environment
@@ -23,7 +23,8 @@ locals {
       ]
       container_vcpu   = "2"
       container_memory = "8192"
-      jobRoleArn       = aws_iam_role.ecs_task_execution_role.arn
+      executionRoleArn = aws_iam_role.fargate_execution.arn
+      taskRoleArn      = aws_iam_role.fargate_task.arn
       assignPublicIp   = "ENABLED"
     }
   }

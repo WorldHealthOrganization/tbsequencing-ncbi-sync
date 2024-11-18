@@ -1,57 +1,44 @@
-data "aws_iam_policy_document" "secret_access_document" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "secretsmanager:GetSecretValue",
-    ]
-    resources = [
-      data.aws_secretsmanager_secret.entrez.arn
-    ]
-  }
-}
-
-resource "aws_iam_policy" "ncbi_secret_access" {
-  name        = "${local.prefix}-ncbi_secret_access_policy"
-  description = "Policy to allow reading of the NCBI secret"
-  policy      = data.aws_iam_policy_document.secret_access_document.json
-}
-
 resource "aws_iam_service_linked_role" "batch" {
   aws_service_name = "batch.amazonaws.com"
 }
 
-data "aws_iam_policy_document" "assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
 
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
+resource "aws_iam_role" "fargate_execution" {
+  name               = "${local.prefix}-fargate-execution"
+  assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
+  tags = {
+    Name = "${local.prefix}-fargate-execution"
   }
 }
 
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name               = "${local.prefix}-ecs_fargate_task_execution_role"
+resource "aws_iam_role" "fargate_task" {
+  name               = "${local.prefix}-fargate-task"
   assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
   tags = {
-    Name = "${local.prefix}-ecs_fargate_task_execution_role"
+    Name = "${local.prefix}-fargate-task"
   }
 }
 
 locals {
+  policies = [
+    {
+      name        = "fargate-execution"
+      description = ""
+      policy      = data.aws_iam_policy_document.fargate_execution.json
+    },
+  ]
   policy_mapping = {
     ecs_task_execution_role = {
-      role   = aws_iam_role.ecs_task_execution_role.name
-      policy = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+      role   = aws_iam_role.fargate_execution.name
+      policy = module.policies.policy_arn["fargate-execution"]
     },
     ecs_task_rds_iam_access = {
-      role   = aws_iam_role.ecs_task_execution_role.name
+      role   = aws_iam_role.fargate_task.name
       policy = data.aws_iam_policy.rds_iam_access.arn
     },
     ecs_task_ncbi_secret_access = {
-      role   = aws_iam_role.ecs_task_execution_role.name
-      policy = aws_iam_policy.ncbi_secret_access.arn
+      role   = aws_iam_role.fargate_task.name
+      policy = data.aws_iam_policy.ncbi_secret_access.arn
     }
   }
 }
@@ -59,4 +46,13 @@ locals {
 module "ecs-task-policy-mapping" {
   source = "git::https://github.com/finddx/seq-treat-tbkb-terraform-modules.git//iam_policy_mapping?ref=iam_policy_mapping-v1.1"
   roles  = local.policy_mapping
+}
+
+module "policies" {
+  source       = "git::https://github.com/finddx/seq-treat-tbkb-terraform-modules.git//iam_policy?ref=iam_policy-v1.0"
+  aws_region   = local.aws_region
+  environment  = var.environment
+  project_name = var.project_name
+  module_name  = var.module_name
+  policies     = local.policies
 }

@@ -2,7 +2,6 @@ resource "aws_iam_service_linked_role" "batch" {
   aws_service_name = "batch.amazonaws.com"
 }
 
-
 resource "aws_iam_role" "fargate_execution" {
   name               = "${local.prefix}-fargate-execution"
   assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
@@ -19,6 +18,15 @@ resource "aws_iam_role" "fargate_task" {
   }
 }
 
+resource "aws_iam_role" "scheduled_rule" {
+  name               = "${local.prefix}-eb-rule"
+  assume_role_policy = data.aws_iam_policy_document.assume-eb.json
+  tags = {
+    Name = "${local.prefix}-eb-rule"
+  }
+
+}
+
 locals {
   policies = [
     {
@@ -26,6 +34,11 @@ locals {
       description = ""
       policy      = data.aws_iam_policy_document.fargate_execution.json
     },
+    {
+      name        = "eb-rule"
+      description = ""
+      policy      = data.aws_iam_policy_document.eb.json
+    }
   ]
   policy_mapping = {
     ecs_task_execution_role = {
@@ -39,6 +52,10 @@ locals {
     ecs_task_ncbi_secret_access = {
       role   = aws_iam_role.fargate_task.name
       policy = data.aws_iam_policy.ncbi_secret_access.arn
+    },
+    eb = {
+      role   = aws_iam_role.scheduled_rule.name
+      policy = module.policies.policy_arn["eb-rule"]
     }
   }
 }

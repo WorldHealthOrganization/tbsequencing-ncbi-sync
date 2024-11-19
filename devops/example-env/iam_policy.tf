@@ -1,3 +1,25 @@
+data "aws_iam_policy_document" "assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "assume-eb" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "fargate_execution" {
   # Accessing the Docker repository for getting the image
   statement {
@@ -33,13 +55,32 @@ data "aws_iam_policy_document" "fargate_execution" {
   }
 }
 
-data "aws_iam_policy_document" "assume_role_policy" {
+data "aws_iam_policy_document" "step-func" {
+  version = "2012-10-17"
   statement {
-    actions = ["sts:AssumeRole"]
+    effect = "Allow"
+    actions = [
+      "batch:SubmitJob",
+      "batch:DescribeJobs",
+      "batch:TerminateJob",
+      "states:ListExecutions"
+    ]
+    resources = [
+      "*",
+    ]
+  }
+}
 
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
+data "aws_iam_policy_document" "eb" {
+  version = "2012-10-17"
+  statement {
+    effect = "Allow"
+    actions = [
+      "states:StartExecution",
+    ]
+    resources = [
+      module.sync_taxonomy.state_machine_arn,
+      module.sync_INSDC.state_machine_arn
+    ]
   }
 }

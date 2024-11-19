@@ -23,19 +23,17 @@ module "sync_taxonomy" {
   }
 
   attach_policy_json = true
-  trusted_entities = [
-    "events.amazonaws.com"
-  ]
-  policy_json  = data.aws_iam_policy_document.taxonomy.json
-  policy_jsons = [data.aws_iam_policy_document.xray.json]
+
+  policy_json = data.aws_iam_policy_document.step-func.json
+
   tags = {
     Name = "${local.prefix}-taxonomy"
   }
-  attach_policy = false
-  policy        = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 
-  attach_policies    = false
-  policies           = ["arn:aws:iam::aws:policy/AWSXrayReadOnlyAccess"]
+  attach_policy = false
+
+  attach_policies = false
+
   number_of_policies = 1
 
   attach_policy_statements = false
@@ -45,9 +43,9 @@ module "sync_INSDC" {
   source = "git::https://github.com/finddx/seq-treat-tbkb-terraform-modules.git//step_functions?ref=step_functions-v1.1"
 
   name              = "${local.prefix}-sync-INSDC"
-  create_role       = true
-  use_existing_role = false
-  role_name         = "${local.prefix}-sync-INSDC"
+  create_role       = false
+  use_existing_role = true
+  role_arn          = module.sync_taxonomy.role_arn
 
   definition = templatefile("sync.json",
     {
@@ -67,55 +65,18 @@ module "sync_INSDC" {
   }
 
   attach_policy_json = true
-  trusted_entities = [
-    "events.amazonaws.com"
-  ]
-  policy_json  = data.aws_iam_policy_document.taxonomy.json
-  policy_jsons = [data.aws_iam_policy_document.xray.json]
+
+  policy_json = data.aws_iam_policy_document.step-func.json
+
   tags = {
     Name = "${local.prefix}-sync"
   }
-  attach_policy = false
-  policy        = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 
-  attach_policies    = false
-  policies           = ["arn:aws:iam::aws:policy/AWSXrayReadOnlyAccess"]
+  attach_policy = false
+
+  attach_policies = false
+
   number_of_policies = 1
 
   attach_policy_statements = false
-}
-
-data "aws_iam_policy_document" "taxonomy" {
-  version = "2012-10-17"
-  statement {
-    effect = "Allow"
-    actions = [
-      "batch:SubmitJob",
-      "batch:DescribeJobs",
-      "batch:TerminateJob",
-      "events:PutTargets",
-      "events:PutRule",
-      "events:DescribeRule",
-      "batch:DescribeJobQueues",
-      "lambda:InvokeFunction",
-      "states:StartExecution",
-      "states:ListExecutions"
-    ]
-    resources = [
-      "*",
-    ]
-  }
-}
-
-data "aws_iam_policy_document" "xray" {
-  version = "2012-10-17"
-  statement {
-    effect = "Allow"
-    actions = [
-      "xray:*"
-    ]
-    resources = [
-      "*",
-    ]
-  }
 }

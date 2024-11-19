@@ -11,7 +11,7 @@ The repository will deploy the following:
 - Eventbridge rules to schedule synchronization (disabled by default)
 - Step Function workflow for orchestrating the jobs
 
-There are no other dependancies than having the main infrastructure repository deployed. 
+There are no other dependancies than having the main infrastructure repository deployed and having filled up the NCBI secrets for authentication (email and api_key) in Secrets Manager (the secret object was created by the main repository).
 
 There are only three terraform variable to set up:
 - project_name

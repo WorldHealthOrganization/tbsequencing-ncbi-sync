@@ -11,7 +11,7 @@ The repository will deploy the following:
 - Eventbridge rules to schedule synchronization (disabled by default)
 - Step Function workflow for orchestrating the jobs
 
-There are no other dependancies than having the main infrastructure repository deployed and having filled up the NCBI secrets for authentication (email and api_key) in Secrets Manager (the secret object was created by the main repository).
+For deployment, there are no other dependancies than having the main infrastructure repository deployed.
 
 There are only three terraform variable to set up:
 - project_name
@@ -23,6 +23,13 @@ They must be equal to the values used in the main repository.
 # Application Code
 
 You will need to build and deploy a Docker image containing the python application code handling synchronization. An AWS ECR has been deployed by the main repository and will receive the Docker image. Refer to our [action file](.github/workflows/push.yml) and reusable [workflow](https://github.com/finddx/seq-treat-tbkb-github-workflows/blob/main/.github/workflows/build_push.yml) for building and pushing the image.
+
+For the synchronization logic to be successful, you will need to:
+
+1. Deploy the [backend](https://github.com/finddx/tbsequencing-backend) repository
+2. Have the migration run in ECS
+3. Fill up the NCBI authentication secrets that were created in AWS Secrets Manager
+4. Run first the taxonomy synchronization and then the INSDC 
 
 # Entrez
 

@@ -1,0 +1,101 @@
+include:
+- file: projects/.terraform_deploy.yml
+  project: seqtreat/output-2/tbkb-pipelines
+  ref: terraform-v3.0
+- file: projects/.build_push.yml
+  project: seqtreat/output-2/tbkb-pipelines
+  ref: main
+
+variables:
+  AWS_MAX_ATTEMPTS: "15"
+  FF_NETWORK_PER_BUILD: "true"
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+  PYTHONUNBUFFERED: "1"
+  DEBUG: "true"
+  REPO_NAME: "fdx-ncbi-sync"
+  BUILD_DIR: "${CI_PROJECT_DIR}"
+
+terraform_validate_uat:
+  stage: terraform validate
+  extends:
+    - .terraform_validate
+  environment: uat
+
+terraform_plan_uat:
+  stage: terraform plan
+  extends:
+    - .terraform_plan
+  dependencies:
+    - terraform_validate_uat
+  environment: uat
+
+terraform_apply_uat:
+  stage: terraform apply
+  extends:
+    - .terraform_apply
+  dependencies:
+    - terraform_plan_uat
+  environment: uat
+
+build_push_uat:
+  stage: build_push
+  extends:
+    - .build_push
+  environment: uat
+
+terraform_validate_prod-f4:
+  stage: terraform validate
+  extends:
+    - .terraform_validate
+  environment: prod-f4
+
+terraform_plan_prod-f4:
+  stage: terraform plan
+  extends:
+    - .terraform_plan
+  dependencies:
+    - terraform_validate_prod-f4
+  environment: prod-f4
+
+terraform_apply_prod-f4:
+  stage: terraform apply
+  extends:
+    - .terraform_apply
+  dependencies:
+    - terraform_plan_prod-f4
+  environment: prod-f4
+
+build_push_prod-f4:
+  stage: build_push
+  extends:
+    - .build_push
+  environment: prod-f4
+
+terraform_validate_test-sec:
+  stage: terraform validate
+  extends:
+    - .terraform_validate
+  environment: test-sec
+
+terraform_plan_test-sec:
+  stage: terraform plan
+  extends:
+    - .terraform_plan
+  dependencies:
+    - terraform_validate_test-sec
+  environment: test-sec
+
+terraform_apply_test-sec:
+  stage: terraform apply
+  extends:
+    - .terraform_apply
+  dependencies:
+    - terraform_plan_test-sec
+  environment: test-sec
+
+build_push_test-sec:
+  stage: build_push
+  extends:
+    - .build_push
+  environment: test-sec

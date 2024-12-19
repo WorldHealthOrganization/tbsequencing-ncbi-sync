@@ -1,0 +1,16 @@
+version: "3.6"
+services:
+  db:
+    image: postgres:alpine
+    command: postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c random_page_cost=1.0
+    ports:
+      - "54320:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=app
+#    tmpfs: /var/lib/postgresql/data
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      # copy the sql script to create tables
+      - ./sql/initial.sql:/docker-entrypoint-initdb.d/initial.sql

@@ -1,0 +1,51 @@
+version: '3'
+
+tasks:
+  iac-terraform-format:
+    dir: '{{.DIR}}'
+    cmds:
+      - terraform fmt -write -recursive
+      - terraform validate
+      - tfsec .
+      - find . -mindepth 0 -type d | grep -v -E ".terraform|.external_modules" | xargs -L1 tflint -f compact --enable-plugin aws
+
+  iac-terraform:
+    dir: '{{.DIR}}'
+    cmds:
+      - task: iac-terraform-format
+        vars: {DIR: '{{.DIR}}', DIR_TARGET: '{{.DIR_TARGET}}'}
+      - export AWS_PROFILE=find-dev
+      - terraform plan -var-file=inputs.dev.tfvars.json --out /tmp/tfplan.binary
+      - terraform show -json /tmp/tfplan.binary > /tmp/tfplan.json
+      - checkov -f /tmp/tfplan.json
+
+  code-python-format:
+    dir: '{{.DIR}}'
+    cmds:
+      - autoflake --in-place --remove-all-unused-imports -r {{.DIR_TARGET}}
+      - isort {{.DIR_TARGET}}
+      - black {{.DIR_TARGET}}
+
+  code-python:
+    dir: '{{.DIR}}'
+    cmds:
+      - task: code-python-format
+        vars: {DIR: '{{.DIR}}', DIR_TARGET: '{{.DIR_TARGET}}'}
+      - pylint --exit-zero {{.DIR_TARGET}}
+      - mypy {{.DIR_TARGET}}
+#      - mypy --strict {{.DIR_TARGET}}
+
+  other:
+    dir: '{{.DIR}}'
+    cmds:
+      - checkov -d . --download-external-modules true
+
+  all:
+    dir: '{{.DIR}}'
+    cmds:
+      - task: code-python
+        vars: {DIR: '{{.DIR}}', DIR_TARGET: '{{.DIR_TARGET}}'}
+      - task: iac-terraform
+        vars: {DIR: '{{.DIR}}', DIR_TARGET: '{{.DIR_TARGET}}'}
+      - task: other
+        vars: {DIR: '{{.DIR}}', DIR_TARGET: '{{.DIR_TARGET}}'}

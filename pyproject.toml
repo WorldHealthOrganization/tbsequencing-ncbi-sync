@@ -1,0 +1,162 @@
+# Ref: https://github.com/atlassian-api/atlassian-python-api/blob/master/pyproject.toml
+
+
+[project]
+name = "tbkb-ncbi-sync"
+
+[[tool.mypy.overrides]]
+module = "Bio,pycountry"
+ignore_missing_imports = true
+
+[tool.black]
+target-version = ['py39']
+line-length = 120
+include_trailing_comma = false
+skip-magic-trailing-comma = true
+preview = true
+
+[tool.pylint.format]
+max-line-length = 120
+max-module-lines = 1000
+
+[tool.pylint.MASTER]
+# Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
+# number of processors available to use.
+jobs = 0
+
+# When enabled, pylint would attempt to guess common misconfiguration and emit
+# user-friendly hints instead of false-positive error messages.
+suggestion-mode = 'yes'
+
+[tool.pylint.messages_control]
+
+
+# Only show warnings with the listed confidence levels. Leave empty to show
+# all. Valid levels: HIGH, INFERENCE, INFERENCE_FAILURE, UNDEFINED.
+confidence = ''
+
+# Disable the message, report, category or checker with the given id(s). You
+# can either give multiple identifiers separated by comma (,) or put this
+# option multiple times (only on the command line, not in the configuration
+# file where it should appear only once). You can also use "--disable=all" to
+# disable everything first and then reenable specific checks. For example, if
+# you want to run only the similarities checker, you can use "--disable=all
+# --enable=similarities". If you want to run only the classes checker, but have
+# no Warning level messages displayed, use "--disable=all --enable=classes
+# --disable=W".
+disable = '''
+        eq-without-hash,
+        missing-module-docstring,
+        missing-class-docstring,
+        missing-function-docstring,
+        W,
+'''
+
+[tool.pylint.DESIGN]
+
+# Maximum number of arguments for function / method.
+max-args = 5
+
+# Maximum number of attributes for a class (see R0902).
+max-attributes = 7
+
+# Maximum number of boolean expressions in an if statement (see R0916).
+max-bool-expr = 5
+
+# Maximum number of branch for function / method body.
+max-branches = 12
+
+# Maximum number of locals for function / method body.
+max-locals = 15
+
+# Maximum number of parents for a class (see R0901).
+max-parents = 7
+
+# Maximum number of public methods for a class (see R0904).
+max-public-methods = 20
+
+# Maximum number of return / yield for function / method body.
+max-returns = 6
+
+# Maximum number of statements in function / method body.
+max-statements = 50
+
+# Minimum number of public methods for a class (see R0903).
+min-public-methods = 2
+
+[tool.pylint.MISCELLANEOUS]
+
+# List of note tags to take in consideration, separated by a comma.
+notes = '''FIXME,
+      XXX,
+      TODO
+'''
+
+
+[tool.pylint.SIMILARITIES]
+
+# Ignore comments when computing similarities.
+ignore-comments = 'yes'
+
+# Ignore docstrings when computing similarities.
+ignore-docstrings = 'yes'
+
+# Ignore imports when computing similarities.
+ignore-imports = 'no'
+
+# Minimum lines number of a similarity.
+min-similarity-lines = 4
+
+
+[tool.pylint.BASIC]
+# Good variable names which should always be accepted, separated by a comma.
+good-names = '''i,
+           j,
+           k,
+           ex,
+           e,
+           Run,
+           pk,
+           fd,
+           x,
+           y,
+           _,
+           db,
+           app,
+           id,
+           a,
+           b,
+           c
+'''
+
+[tool.poetry]
+name = "tbkb-ncbi-sync"
+version = "0.1.0"
+description = ""
+authors = ["beketx <beketx@gmail.com>", "Denis Tomilin <dt0xff@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+boto3 = "^1.26.27"
+biopython = "^1.80"
+psycopg2 = "^2.9.5"
+pycountry = "^22.3.5"
+pytest = "^7.2.0"
+pytest-cov = "^4.0.0"
+pytest-mock = "^3.10.0"
+python-dateutil = "^2.8.2"
+psycopg = "^3.1.4"
+
+
+[tool.poetry.group.dev.dependencies]
+pylint = "^2.15.8"
+autoflake = "^2.0.0"
+mypy = "^0.991"
+types-psycopg2 = "^2.9.21.2"
+types-python-dateutil = "^2.8.19.4"
+boto3-stubs = "^1.26.27"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

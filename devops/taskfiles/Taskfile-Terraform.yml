@@ -1,0 +1,27 @@
+version: '3'
+
+env:
+  AWS_PROFILE: "{{.AWS_PROFILE_PREFIX}}-{{.ENV}}"
+
+tasks:
+  init:
+    dir: '{{.DIR}}/{{.ENV}}'
+    cmds:
+      - terraform init -reconfigure
+
+  apply:
+    dir: '{{.DIR}}/{{.ENV}}'
+    env:
+      AWS_PROFILE: "{{.AWS_PROFILE_PREFIX}}-{{.ENV}}"
+    cmds:
+      - terraform apply
+
+  apply-yes:
+    dir: '{{.DIR}}/{{.ENV}}'
+    cmds:
+      - terraform apply -auto-approve
+
+  destroy:
+    dir: '{{.DIR}}/{{.ENV}}'
+    cmds:
+      - terraform destroy

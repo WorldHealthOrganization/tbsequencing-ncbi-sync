@@ -1,0 +1,17 @@
+version: '3'
+
+tasks:
+  dep-add:
+    dir: '{{.DIR}}'
+    cmds:
+      - poetry add -G dev {{.CLI_ARGS}}
+
+  dep-install:
+    dir: '{{.DIR}}'
+    cmds:
+      - poetry install
+
+  env-activate:
+    dir: '{{.DIR}}'
+    cmds:
+      - source $(poetry env info --path)/bin/activate

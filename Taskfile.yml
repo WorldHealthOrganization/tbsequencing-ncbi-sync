@@ -1,0 +1,52 @@
+version: '3'
+
+vars:
+  ENV: "uat"
+  AWS_REGION: "us-east-1"
+  AWS_PROFILE_PREFIX: "find"
+
+includes:
+  audit:
+    taskfile: ./devops/taskfiles/Taskfile-Audit.yml
+    internal: true
+  python:
+    taskfile: ./devops/taskfiles/Taskfile-Python.yml
+  terraform:
+    taskfile: ./devops/taskfiles/Taskfile-Terraform.yml
+    aliases: [tf]
+    vars:
+      DIR: "devops/envs"
+      AWS_PROFILE_PREFIX: "{{.AWS_PROFILE_PREFIX}}"
+      ENV: "{{.ENV}}"
+  docker:
+    taskfile: ./devops/taskfiles/Taskfile-Docker.yml
+    vars:
+      AWS_REGION: "{{.AWS_REGION}}"
+      AWS_PROFILE: "{{.AWS_PROFILE_PREFIX}}-{{.ENV}}"
+
+tasks:
+  deploy:
+    cmds:
+      - task: docker:deploy
+        vars:
+          DIR: '.'
+          AWS_ECR_ID: 874749317415
+          NAME: fdx-ncbi-sync
+          TAG: latest
+
+  format:
+    cmds:
+      - task: audit:code-python
+        vars: { DIR: '.', DIR_TARGET: 'src/' }
+      - task: audit:code-python
+        vars: {DIR: '.', DIR_TARGET: 'tests/'}
+
+  iac-format:
+    cmds:
+      - task: audit:iac-terraform-format
+        vars: { DIR: 'devops', DIR_TARGET: 'devops/envs/uat' }
+
+  rds:
+    cmds:
+      - ssh -N -L 5433:fdxmainuatdefault.cyelkpwgr0gv.us-east-1.rds.amazonaws.com:5432 ec2-user@34.236.174.138
+    silent: true

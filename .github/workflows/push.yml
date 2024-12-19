@@ -17,6 +17,7 @@ jobs:
       environment:  ${{ github.event.inputs.environment }}
       repo_name: ncbi-sync
       workdir: ./
+      rolename: ${{startsWith(inputs.environment, 'prod') && 'push-glue' || 'push-docker-image'}}
     secrets: 
       AWS_ACCOUNT_ID: ${{secrets.AWS_ACCOUNT_ID}}
 

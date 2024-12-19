@@ -1,0 +1,82 @@
+{
+  "Comment": "Workflow for synchronizing the taxon table using the NCBI taxonomy database.",
+  "StartAt": "ConcurrencyProtectionGetStatus",
+  "States": {
+    "ConcurrencyProtectionGetStatus": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:listExecutions",
+      "Parameters": {
+        "StateMachineArn.$": "$$.StateMachine.Id",
+        "StatusFilter": "RUNNING"
+      },
+      "Next": "ConcurrencyProtectionCheck",
+      "ResultSelector": {
+        "Count.$": "States.ArrayLength($.Executions)",
+        "Items.$": "$.Executions"
+      },
+      "ResultPath": "$.ConcurrencyProtectionRuns"
+    },
+    "ConcurrencyProtectionCheck": {
+      "Type": "Choice",
+      "Choices": [{
+        "Variable": "$.ConcurrencyProtectionRuns.Count",
+        "NumericGreaterThan": 1,
+        "Next": "ConcurrencyProtectionTriggered"
+      }],
+      "Default": "DefineDefaults"
+    },
+    "ConcurrencyProtectionTriggered": {
+      "Type": "Fail",
+      "Error": "ConcurrencyProtectionTriggered",
+      "Cause": "Another instance is running in parallel, skipping this one"
+    },
+    "DefineDefaults": {
+      "Type": "Pass",
+      "Next": "ApplyDefaults",
+      "ResultPath": "$.InputDefaults",
+      "Parameters": {
+        "Debug": false
+      }
+    },
+    "ApplyDefaults": {
+      "Type": "Pass",
+      "Next": "SyncTaxonomy",
+      "ResultPath": "$",
+      "Parameters": {
+        "ParametersWithDefaults.$": "States.JsonMerge($.InputDefaults, $$.Execution.Input, false)"
+      }
+    },
+    "SyncTaxonomy": {
+      "Type": "Task",
+      "ResultPath": null,
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName": "sync-taxonomy",
+        "JobDefinition": "${JobDefinitionSync}",
+        "JobQueue": "${JobQueueArn}",
+        "Parameters": {
+          "DB_HOST": "${DbHost}",
+          "DB_NAME": "${DbName}",
+          "DB_USER": "${DbUser}",
+          "DB_PASSWORD": "${DbPassword}",
+          "DB_PORT": "${DbPort}",
+          "SECTION": "taxonomy",
+          "DEBUG.$": "States.JsonToString($.ParametersWithDefaults.Debug)"
+        },
+      "ContainerOverrides": {
+        "Command": [
+              "python", "/app/src/main.py",
+              "--section", "Ref::SECTION",
+              "--db_host", "Ref::DB_HOST",
+              "--db_name", "Ref::DB_NAME",
+              "--db_user", "Ref::DB_USER",
+              "--db_password", "Ref::DB_PASSWORD",
+              "--db_port", "Ref::DB_PORT",
+              "--set_debug", "Ref::DEBUG"
+          ]
+        }
+      },
+      "End": true
+    }
+  }
+}

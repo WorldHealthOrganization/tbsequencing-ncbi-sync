@@ -63,7 +63,10 @@ data "aws_iam_policy_document" "step-func" {
       "batch:SubmitJob",
       "batch:DescribeJobs",
       "batch:TerminateJob",
-      "states:ListExecutions"
+      "states:ListExecutions",
+      "events:PutTargets",
+      "events:PutRule",
+      "events:DescribeRule",
     ]
     resources = [
       "*",

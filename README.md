@@ -1,3 +1,6 @@
+# WHO Owner
+Owned by the Global Tuberculosis Programme, GTB, Geneva Switzerland. References: Carl-Michael Nathanson.
+
 # Overview
 This repository holds both terraform configuration files and python application code for handling the synchronization between the local database and the INSDC. 
 

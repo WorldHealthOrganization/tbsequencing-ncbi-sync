@@ -3,7 +3,15 @@ from typing import Iterable
 
 from src.common.logs import create_logger
 from src.db.database import Connection, execute_many_with_return
-from src.sync_samples.models import Drug, Medium, NormalizationData, PDSTMethod, ResistanceRecord, Sample, Taxon
+from src.sync_samples.models import (
+    Drug,
+    Medium,
+    NormalizationData,
+    PDSTMethod,
+    ResistanceRecord,
+    Sample,
+    Taxon,
+)
 
 log = create_logger(__name__)
 
@@ -40,6 +48,44 @@ def update_samples(db: Connection, items: list[Sample]):
             for item in items
         ],
     )
+
+
+def create_samples(db: Connection, items: list[Sample]) -> list[int]:
+    curr = db.cursor()
+    results = execute_many_with_return(
+        curr,
+        """
+        INSERT INTO "submission_sample" (
+            package_id,
+            biosample_id,
+            ncbi_taxon_id,
+            submission_date,
+            sampling_date,
+            latitude,
+            longitude,
+            country_id,
+            additional_geographical_information,
+            isolation_source
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
+    """,
+        [
+            (
+                item.package_id,
+                item.biosample_id,
+                item.ncbi_taxon_id,
+                item.submission_date,
+                item.sampling_date,
+                item.latitude,
+                item.longitude,
+                item.country_id,
+                item.geo_loc_name,
+                item.isolation_source,
+            )
+            for item in items
+        ],
+    )
+    return [row[0] for row in results]
 
 
 def get_samples_with_missing_ncbi_data_count(db: Connection) -> int:

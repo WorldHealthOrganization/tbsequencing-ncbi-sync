@@ -63,3 +63,4 @@ terraform.rc
 **/.idea/*
 /tests/env/postgres-data/
 /cached/
+.vscode

@@ -36,9 +36,9 @@ class ResistanceRecord:
 
 @dataclass
 class Sample:
-    alias_id: int
+    alias_id: int | None
+    db_sample_id: int | None
     package_id: int
-    db_sample_id: int
     biosample_id: int
 
     db_taxon_id: Optional[int]

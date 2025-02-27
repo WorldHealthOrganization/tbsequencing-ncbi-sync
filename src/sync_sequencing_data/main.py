@@ -14,10 +14,10 @@ log = logs.create_logger(__name__)
 
 
 def main(db: Connection, entrez: EntrezAdvanced, relative_date: int, bioproject_accession: str):
-    search = " reldate " + str(relative_date)
+    log_message = f" reldate {relative_date}"
     if bioproject_accession:
-        search = " BioProject " + bioproject_accession
-    log.info("Starting the sequencing data synchronization with"+ search)
+        log_message = f" BioProject {bioproject_accession}"
+    log.info("Starting the sequencing data synchronization with%s", log_message)
     totals = Stats()
 
     tmp_package_id = sql.get_or_create_temporary_ncbi_package(db)
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--db_port", help="Database port", default=5433)
     parser.add_argument("--relative_date", type=int, default=30, help="Relative date")
     parser.add_argument("--bioproject_accession", type=str, default="", help="BioProject accession")
-    
+
     args = parser.parse_args()
 
     dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user)

@@ -3,15 +3,7 @@ from typing import Iterable
 
 from src.common.logs import create_logger
 from src.db.database import Connection, execute_many_with_return
-from src.sync_samples.models import (
-    Drug,
-    Medium,
-    NormalizationData,
-    PDSTMethod,
-    ResistanceRecord,
-    Sample,
-    Taxon,
-)
+from src.sync_samples.models import Drug, Medium, NormalizationData, PDSTMethod, ResistanceRecord, Sample, Taxon
 
 log = create_logger(__name__)
 
@@ -65,8 +57,9 @@ def create_samples(db: Connection, items: list[Sample]) -> list[int]:
             longitude,
             country_id,
             additional_geographical_information,
-            isolation_source
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            isolation_source,
+            origin
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """,
         [
@@ -81,6 +74,7 @@ def create_samples(db: Connection, items: list[Sample]) -> list[int]:
                 item.country_id,
                 item.geo_loc_name,
                 item.isolation_source,
+                "NCBI",
             )
             for item in items
         ],

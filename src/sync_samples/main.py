@@ -15,7 +15,7 @@ from src.sync_samples.sql import get_normalisation_data
 from src.sync_sequencing_data.sql import (
     get_samples_by_sample_aliases,
     insert_sample_aliases,
-    get_or_create_temporary_ncbi_package
+    get_or_create_temporary_ncbi_package,
 )
 
 log = logs.create_logger(__name__)
@@ -73,10 +73,7 @@ def save_samples(db: Connection, samples: list[Sample]) -> Stats:
 
     # filter out the existing aliases
     existing_aliases_names = {
-        alias.name
-        for alias in get_samples_by_sample_aliases(
-            db, [alias.name for alias in new_aliases]
-        )
+        alias.name for alias in get_samples_by_sample_aliases(db, [alias.name for alias in new_aliases])
     }
     new_aliases = [alias for alias in new_aliases if alias.name not in existing_aliases_names]
 
@@ -98,67 +95,51 @@ def save_samples(db: Connection, samples: list[Sample]) -> Stats:
 
 
 def process_accession_based_samples(
-        db: Connection,
-        entrez: EntrezAdvanced,
-        samples: list,
-        page_num: int,
-        pages_total: int,
-        normalization_data: dict) -> Stats:
+    db: Connection, entrez: EntrezAdvanced, samples: list, page_num: int, pages_total: int, normalization_data: dict
+) -> Stats:
     """Process samples based on their accession numbers."""
     page_totals = Stats()
 
     # Search for samples by accession
     accession_searches = [f"{sample[0]}[ACCESSION]" for sample in samples]
     accession_query = " OR ".join(accession_searches)
-    accession_ids = set(
-        id
-        for result in entrez.esearch(DB.BIO_SAMPLE, accession_query)
-        for id in result[0]
-    )
+    accession_ids = set(id for result in entrez.esearch(DB.BIO_SAMPLE, accession_query) for id in result[0])
 
     missing_samples = len(samples) - len(accession_ids)
 
     if missing_samples:
         log.info(
-            "[Page %s/%s] %s sample(s) were not returned by the BioSample API.",
-            page_num,
-            pages_total,
-            missing_samples,
+            "[Page %s/%s] %s sample(s) were not returned by the BioSample API.", page_num, pages_total, missing_samples
         )
 
     if accession_ids:
-        process_sample_batch(
-            db, entrez, accession_ids, samples, page_totals, normalization_data, False
-        )
+        process_sample_batch(db, entrez, accession_ids, samples, page_totals, normalization_data, False)
 
     return page_totals
 
 
 def process_date_based_samples(
-        db: Connection,
-        entrez: EntrezAdvanced,
-        date_based_ids: set,
-        normalization_data: dict) -> Stats:
+    db: Connection, entrez: EntrezAdvanced, date_based_ids: set, normalization_data: dict
+) -> Stats:
     """Process samples based on relative date."""
     page_totals = Stats()
 
     if date_based_ids:
         log.info("Start processing empty samples based on relative date")
-        process_sample_batch(
-            db, entrez, date_based_ids, None, page_totals, normalization_data, True
-        )
+        process_sample_batch(db, entrez, date_based_ids, None, page_totals, normalization_data, True)
 
     return page_totals
 
 
 def process_sample_batch(
-        db: Connection,
-        entrez: EntrezAdvanced,
-        ids: set,
-        samples: list | None,
-        page_totals: Stats,
-        normalization_data: dict,
-        is_empty: bool) -> None:
+    db: Connection,
+    entrez: EntrezAdvanced,
+    ids: set,
+    samples: list | None,
+    page_totals: Stats,
+    normalization_data: dict,
+    is_empty: bool,
+) -> None:
     """Process a batch of samples."""
 
     biosamples_xml = entrez.efetch(DB.BIO_SAMPLE, list(ids))
@@ -178,9 +159,7 @@ def process_sample_batch(
 
     # Process gathered samples
     if initial_samples_gathered:
-        existing_samples = sql.get_samples_by_biosample_ids(
-            db, [s.biosample_id for s in initial_samples_gathered]
-        )
+        existing_samples = sql.get_samples_by_biosample_ids(db, [s.biosample_id for s in initial_samples_gathered])
 
         # Log warnings for existing samples
         for item in initial_samples_gathered:
@@ -192,9 +171,7 @@ def process_sample_batch(
                 )
 
         filtered_samples = [
-            sample
-            for sample in initial_samples_gathered
-            if sample.biosample_id not in existing_samples
+            sample for sample in initial_samples_gathered if sample.biosample_id not in existing_samples
         ]
 
         valid_samples, samples_without_taxon = populate_taxon_ids(db, filtered_samples)
@@ -204,15 +181,6 @@ def process_sample_batch(
 
 def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     log.info("Starting the samples data retrieval")
-
-    # Get date-based IDs once
-    log.info("Getting empty sample IDs based on relative date %d...", relative_date)
-    date_based_ids = set(
-        id
-        for result in entrez.get_biosample_ids(relative_date)
-        for id in result[0]
-    )
-    log.info("Found empty %d sample IDs from relative date search", len(date_based_ids))
 
     page_num = 0
     last_id = 0
@@ -233,7 +201,11 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
 
         log.info(
             "[Page %s/%s] Got a page of samples with empty NCBI data (last id %s): %s. Head: %s...",
-            page_num, pages_total, last_id, len(samples), samples[:3]
+            page_num,
+            pages_total,
+            last_id,
+            len(samples),
+            samples[:3],
         )
         last_id = samples[-1][1]
 
@@ -246,8 +218,25 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
 
         db.commit()
 
-    # Process date-based samples
-    date_totals = process_date_based_samples(db, entrez, date_based_ids, normalization_data)
+    # Process date-based samples in batches of 1000
+    log.info("Processing samples based on relative date %d...", relative_date)
+    date_totals = Stats()
+
+    for date_ids, page_num, pages_total in entrez.get_biosample_ids(relative_date):
+        log.info(
+            "[Date-based Page %s/%s] Processing batch of %d sample IDs from relative date search",
+            page_num,
+            pages_total,
+            len(date_ids),
+        )
+
+        batch_totals = process_date_based_samples(db, entrez, date_ids, normalization_data)
+        date_totals.merge(batch_totals)
+        db.commit()
+
+        log.info("[Date-based Page %s/%s] Batch stats: %s", page_num, pages_total, batch_totals)
+
+    log.info("Completed processing date-based samples. Total stats: %s", date_totals)
     totals.merge(date_totals)
 
     db.commit()

@@ -3,10 +3,7 @@ from typing import Optional
 
 from src.common import logs
 from src.sync_samples import extractors
-from src.sync_samples.extract_resistance_data import (
-    NormalizationData,
-    extract_resistance_data,
-)
+from src.sync_samples.extract_resistance_data import NormalizationData, extract_resistance_data
 from src.sync_samples.sql import Sample
 from src.sync_sequencing_data.models import NewSampleAlias
 
@@ -14,11 +11,7 @@ log = logs.create_logger(__name__)
 
 
 def extract_biosample(
-    samples,
-    biosample_xml,
-    normalization_data: NormalizationData,
-    tmp_package_id: int,
-    is_empty: bool = False
+    samples, biosample_xml, normalization_data: NormalizationData, tmp_package_id: int, is_empty: bool = False
 ) -> Optional[Sample]:
     biosample_id: str = biosample_xml.attrib["id"]
 
@@ -33,13 +26,7 @@ def extract_biosample(
 
     sample_aliases = []
     for id in biosample_xml.findall("Ids/Id"):
-        sample_aliases.append(
-            (
-                id.text,
-                id.attrib.get("db", "") or "NCBI_IDS",
-                id.attrib.get("db_label", ""),
-            )
-        )
+        sample_aliases.append((id.text, id.attrib.get("db", "") or "NCBI_IDS", id.attrib.get("db_label", "")))
     biosample_name = biosample_xml.find('Attributes/Attribute[@harmonized_name="sample_name"]')
     if biosample_name is not None:
         sample_aliases.append((biosample_name.text, "INSDC", ""))
@@ -69,12 +56,32 @@ def extract_biosample(
         alias_id = db_sample_id = None
         package_id = tmp_package_id
         biosample_name = biosample_name.text if biosample_name is not None else biosample_id
+        aliases = [
+            NewSampleAlias(
+                tmp_package_id=package_id,
+                sample_id=db_sample_id,
+                name=alias[0],
+                alias_type="SRS" if alias[1] == "SRA" else alias[1],
+                alias_label="Sample name",
+            )
+            for alias in sample_aliases
+        ]
     else:
         biosample_name, db_sample_id, package_id, alias_id = next(
             (biosample_name, matched_sample_id, package_id, alias_id)
             for biosample_name, matched_sample_id, package_id, alias_id in samples
             if any(biosample_name == alias[0] for alias in sample_aliases)
         )
+        aliases = [
+            NewSampleAlias(
+                tmp_package_id=package_id,
+                sample_id=db_sample_id,
+                name=f"{biosample_name}__{alias[0]}",
+                alias_type=alias[1],
+                alias_label=alias[2],
+            )
+            for alias in sample_aliases
+        ]
 
     sample = Sample(
         alias_id=alias_id,
@@ -91,16 +98,7 @@ def extract_biosample(
         geo_loc_name=geo_loc_name,
         isolation_source=isolation_source,
         resistance_data=[],
-        additinal_aliases=[
-            NewSampleAlias(
-                tmp_package_id=package_id,
-                sample_id=db_sample_id,
-                name=f"{biosample_name}__{alias[0]}",
-                alias_type=alias[1],
-                alias_label=alias[2],
-            )
-            for alias in sample_aliases
-        ],
+        additinal_aliases=aliases,
     )
 
     # Collect additional aliases

@@ -180,8 +180,6 @@ def process_sample_batch(
 
 
 def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
-    log.info("Starting the samples data retrieval")
-
     page_num = 0
     last_id = 0
     totals = Stats()
@@ -219,6 +217,7 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
         db.commit()
 
     # Process date-based samples in batches of 1000
+    log.info("Starting the samples data retrieval")
     log.info("Processing samples based on relative date %d...", relative_date)
     date_totals = Stats()
 
@@ -230,7 +229,7 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
             len(date_ids),
         )
 
-        batch_totals = process_date_based_samples(db, entrez, date_ids, normalization_data)
+        batch_totals = process_date_based_samples(db, entrez, [31092424], normalization_data)
         date_totals.merge(batch_totals)
         db.commit()
 
@@ -238,8 +237,6 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
 
     log.info("Completed processing date-based samples. Total stats: %s", date_totals)
     totals.merge(date_totals)
-
-    db.commit()
 
     db.close()
 
@@ -258,9 +255,9 @@ if __name__ == "__main__":
     # TODO: Use the key arguments or better - a parameters store to retrieve the configs
     # Create a Secrets Manager client
 
-    dep_entrez = EntrezAdvanced("afakeemail@gmail.com", "afakeapikey", True)
+    dep_entrez = EntrezAdvanced("steh44@gmail.com", "b050f911a0add590d0ad8cc5605246e0d608", True)
 
-    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user)
+    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user, password="[7B$F$pvj!L~s5PZ*?ElBbsR-_mH")
 
     # Local debugging only
     set_global_debug(True)

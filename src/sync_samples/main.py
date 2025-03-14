@@ -84,7 +84,21 @@ def save_samples(db: Connection, samples: list[Sample]) -> Stats:
     aliases_ids = insert_sample_aliases(db, new_aliases)
     totals.increment("new_aliases_added", len(aliases_ids))
 
-    pdst_records = [(sample, record) for sample in samples for record in sample.resistance_data]
+    # First filter biosample aliases and get their corresponding IDs
+    biosample_aliases = [alias for alias in new_aliases if alias.alias_type.lower() == DB.BIO_SAMPLE.value]
+    biosample_ids = [
+        aliases_ids[i] for i, alias in enumerate(new_aliases) if alias.alias_type.lower() == DB.BIO_SAMPLE.value
+    ]
+
+    # Create map using sample_id for filtered biosample aliases
+    biosample_alias_map = {alias.sample_id: alias_id for alias, alias_id in zip(biosample_aliases, biosample_ids)}
+
+    # Update samples using sample_id
+    for sample in samples:
+        if sample.alias_id is None and sample.db_sample_id in biosample_alias_map:
+            sample.alias_id = biosample_alias_map[sample.db_sample_id]
+
+    pdst_records = [(sample, record) for sample in samples for record in sample.resistance_data if sample.alias_id]
 
     # Keep in mind, for the future reloads we will need to clear the previous data
     # Suggestion: use the PDST data accession key?
@@ -229,7 +243,7 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
             len(date_ids),
         )
 
-        batch_totals = process_date_based_samples(db, entrez, [31092424], normalization_data)
+        batch_totals = process_date_based_samples(db, entrez, date_ids, normalization_data)
         date_totals.merge(batch_totals)
         db.commit()
 
@@ -255,9 +269,9 @@ if __name__ == "__main__":
     # TODO: Use the key arguments or better - a parameters store to retrieve the configs
     # Create a Secrets Manager client
 
-    dep_entrez = EntrezAdvanced("steh44@gmail.com", "b050f911a0add590d0ad8cc5605246e0d608", True)
+    dep_entrez = EntrezAdvanced("afakeemail@gmail.com", "afakeapikey", True)
 
-    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user, password="[7B$F$pvj!L~s5PZ*?ElBbsR-_mH")
+    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user)
 
     # Local debugging only
     set_global_debug(True)

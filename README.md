@@ -31,6 +31,11 @@ One of the step workflow will run daily (if enabled) and will synchronize our da
 3. Using elink, search for all BioSamples associated with these newly inserted sequencing data and insert the new records into our sample and samplealias tables
 4. Using elink, search for all BioProject associated with these newly inserted samples and insert the new records into our package table
 
+
+## NCBI Taxonomy synchronization
+
+Our database is also synchronized with the NCBI taxonomy, via the tables that we imported from the bioSQL schema. We use scripts (in perl) provided by the [bioSQL](https://github.com/biosql/biosql) community to synchronize our taxonomy. We synchronize the taxonomy every 3 months.
+
 # Application Code
 
 You will need to build and deploy a Docker image containing the python application code handling synchronization. An AWS ECR has been deployed by the main repository and will receive the Docker image. Refer to our [action file](.github/workflows/push.yml) and reusable [workflow](https://github.com/finddx/seq-treat-tbkb-github-workflows/blob/main/.github/workflows/build_push.yml) for building and pushing the image.

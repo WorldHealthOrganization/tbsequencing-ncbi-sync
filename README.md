@@ -23,6 +23,14 @@ There are only three terraform variable to set up:
 
 They must be equal to the values used in the main repository.
 
+## INSDC synchronization
+One of the step workflow will run daily (if enabled) and will synchronize our database with new sample data available at the INSDC. All synchronization is performed by using the different tools of the [NCBI Entrez API](https://www.ncbi.nlm.nih.gov/books/NBK25501/) (esearch, efetch, elink). The logic is the following: 
+
+1. Search newly submitted sequencing data with the term “MYCOBACTERIUM” in the organism attribute value.
+2. Insert the new records into the sequencingdata table
+3. Using elink, search for all BioSamples associated with these newly inserted sequencing data and insert the new records into our sample and samplealias tables
+4. Using elink, search for all BioProject associated with these newly inserted samples and insert the new records into our package table
+
 # Application Code
 
 You will need to build and deploy a Docker image containing the python application code handling synchronization. An AWS ECR has been deployed by the main repository and will receive the Docker image. Refer to our [action file](.github/workflows/push.yml) and reusable [workflow](https://github.com/finddx/seq-treat-tbkb-github-workflows/blob/main/.github/workflows/build_push.yml) for building and pushing the image.

@@ -10,10 +10,30 @@ data "aws_iam_policy_document" "secret_access_document" {
   }
 }
 
+data "aws_iam_policy_document" "s3-copy-csv" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+    ]
+    resources = [
+      "${data.aws_ssm_parameter.static_files_bucket_name.value}/*"
+    ]
+  }
+}
+
 resource "aws_iam_policy" "ncbi_secret_access" {
   name        = "${local.prefix}-ncbi_secret_access_policy"
   description = "Policy to allow reading of the NCBI secret"
   policy      = data.aws_iam_policy_document.secret_access_document.json
+}
+
+
+
+resource "aws_iam_policy" "s3-copy-csv" {
+  name        = "${local.prefix}-s3-copy_policy"
+  description = "Policy to allow reading of the NCBI secret"
+  policy      = data.aws_iam_policy_document.s3-copy-csv.json
 }
 
 resource "aws_iam_service_linked_role" "batch" {
@@ -52,6 +72,10 @@ locals {
     ecs_task_ncbi_secret_access = {
       role   = aws_iam_role.ecs_task_execution_role.name
       policy = aws_iam_policy.ncbi_secret_access.arn
+    },
+    ecs_task_s3_copy_csv = {
+      role   = aws_iam_role.ecs_task_execution_role.name
+      policy = aws_iam_policy.s3-copy-csv.arn
     }
   }
 }

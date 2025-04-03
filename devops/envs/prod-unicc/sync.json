@@ -18,11 +18,13 @@
     },
     "ConcurrencyProtectionCheck": {
       "Type": "Choice",
-      "Choices": [{
-        "Variable": "$.ConcurrencyProtectionRuns.Count",
-        "NumericGreaterThan": 1,
-        "Next": "ConcurrencyProtectionTriggered"
-      }],
+      "Choices": [
+        {
+          "Variable": "$.ConcurrencyProtectionRuns.Count",
+          "NumericGreaterThan": 1,
+          "Next": "ConcurrencyProtectionTriggered"
+        }
+      ],
       "Default": "DefineDefaults"
     },
     "ConcurrencyProtectionTriggered": {
@@ -41,13 +43,70 @@
     },
     "ApplyDefaults": {
       "Type": "Pass",
-      "Next": "SyncSequencingData",
+      "Next": "ChoiceBioprojectOrReldate",
       "ResultPath": "$",
       "Parameters": {
         "ParametersWithDefaults.$": "States.JsonMerge($.InputDefaults, $$.Execution.Input, false)"
       }
     },
-    "SyncSequencingData": {
+    "ChoiceBioprojectOrReldate": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ParametersWithDefaults.BioprojectAccession",
+          "IsPresent": true,
+          "Next": "SyncSequencingDataBioproject"
+        }
+      ],
+      "Default": "SyncSequencingDataReldate"
+    },
+    "SyncSequencingDataBioproject": {
+      "Type": "Task",
+      "ResultPath": null,
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName": "sync-sequencing",
+        "JobDefinition": "${JobDefinitionSync}",
+        "JobQueue": "${JobQueueArn}",
+        "Parameters": {
+          "BIOPROJECT.$": "$.ParametersWithDefaults.BioprojectAccession",
+          "DB_HOST": "${DbHost}",
+          "DB_NAME": "${DbName}",
+          "DB_USER": "${DbUser}",
+          "DB_PASSWORD": "${DbPassword}",
+          "DB_PORT": "${DbPort}",
+          "NCBI_SECRET": "${NcbiSecret}",
+          "SECTION": "sequencing",
+          "DEBUG.$": "States.JsonToString($.ParametersWithDefaults.Debug)"
+        },
+        "ContainerOverrides": {
+          "Command": [
+            "python",
+            "/app/src/main.py",
+            "--section",
+            "Ref::SECTION",
+            "--db_host",
+            "Ref::DB_HOST",
+            "--db_name",
+            "Ref::DB_NAME",
+            "--db_user",
+            "Ref::DB_USER",
+            "--db_password",
+            "Ref::DB_PASSWORD",
+            "--db_port",
+            "Ref::DB_PORT",
+            "--bioproject_accession",
+            "Ref::BIOPROJECT",
+            "--ncbi_secret_arn",
+            "Ref::NCBI_SECRET",
+            "--set_debug",
+            "Ref::DEBUG"
+          ]
+        }
+      },
+      "Next": "SyncSamples"
+    },
+    "SyncSequencingDataReldate": {
       "Type": "Task",
       "ResultPath": null,
       "Resource": "arn:aws:states:::batch:submitJob.sync",
@@ -68,18 +127,28 @@
         },
         "ContainerOverrides": {
           "Command": [
-                "python", "/app/src/main.py",
-                "--section", "Ref::SECTION",
-                "--db_host", "Ref::DB_HOST",
-                "--db_name", "Ref::DB_NAME",
-                "--db_user", "Ref::DB_USER",
-                "--db_password", "Ref::DB_PASSWORD",
-                "--db_port", "Ref::DB_PORT",
-                "--relative_date", "Ref::RELATIVE_DATE",
-                "--ncbi_secret_arn", "Ref::NCBI_SECRET",
-                "--set_debug", "Ref::DEBUG"
-            ]
-          }  
+            "python",
+            "/app/src/main.py",
+            "--section",
+            "Ref::SECTION",
+            "--db_host",
+            "Ref::DB_HOST",
+            "--db_name",
+            "Ref::DB_NAME",
+            "--db_user",
+            "Ref::DB_USER",
+            "--db_password",
+            "Ref::DB_PASSWORD",
+            "--db_port",
+            "Ref::DB_PORT",
+            "--relative_date",
+            "Ref::RELATIVE_DATE",
+            "--ncbi_secret_arn",
+            "Ref::NCBI_SECRET",
+            "--set_debug",
+            "Ref::DEBUG"
+          ]
+        }
       },
       "Next": "SyncSamples"
     },

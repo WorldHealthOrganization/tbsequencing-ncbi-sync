@@ -53,7 +53,7 @@ class Sample:
     isolation_source: str
     resistance_data: list[ResistanceRecord]
 
-    additinal_aliases: list[NewSampleAlias]
+    additional_aliases: list[NewSampleAlias]
 
 
 @dataclass

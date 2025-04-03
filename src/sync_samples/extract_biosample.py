@@ -98,7 +98,7 @@ def extract_biosample(
         geo_loc_name=geo_loc_name,
         isolation_source=isolation_source,
         resistance_data=[],
-        additinal_aliases=aliases,
+        additional_aliases=aliases,
     )
 
     # Collect additional aliases

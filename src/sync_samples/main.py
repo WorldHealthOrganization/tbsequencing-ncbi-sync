@@ -66,10 +66,10 @@ def save_samples(db: Connection, samples: list[Sample]) -> Stats:
     if new_samples and new_sample_ids:  # Check if both lists are non-empty
         for sample, new_id in zip(new_samples, new_sample_ids):
             sample.db_sample_id = new_id
-            sample.additinal_aliases = [replace(alias, sample_id=new_id) for alias in sample.additinal_aliases]
+            sample.additional_aliases = [replace(alias, sample_id=new_id) for alias in sample.additional_aliases]
 
     # Now handle aliases after all samples have db_sample_id
-    new_aliases = [alias for sample in samples for alias in sample.additinal_aliases]
+    new_aliases = [alias for sample in samples for alias in sample.additional_aliases]
 
     # filter out the existing aliases
     existing_aliases_names = {

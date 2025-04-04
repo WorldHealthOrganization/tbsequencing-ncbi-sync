@@ -23,6 +23,16 @@ There are only three terraform variable to set up:
 
 They must be equal to the values used in the main repository.
 
+For CICD, the following variables are necessary: 
+
+| Variables/Secrets for CICD | Description|
+|---|----|
+|AWS_ACCOUNT_ID||
+|AWS_REGION||
+|PROJECT_NAME| As defined in the infrastructure repository|
+
+
+
 ## INSDC synchronization
 One of the step workflow will run daily (if enabled) and will synchronize our database with new sample data available at the INSDC. All synchronization is performed by using the different tools of the [NCBI Entrez API](https://www.ncbi.nlm.nih.gov/books/NBK25501/) (esearch, efetch, elink). The logic is the following: 
 

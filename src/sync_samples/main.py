@@ -127,6 +127,8 @@ def process_accession_based_samples(
         )
 
     if accession_ids:
+        # is empty is false because the sample row of these exist already
+        # (inserted during sync-sec)
         process_sample_batch(db, entrez, accession_ids, samples, page_totals, normalization_data, False)
 
     return page_totals
@@ -207,6 +209,10 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     while True:
         page_totals = Stats()
         page_num += 1
+        # Process accession-based samples
+        # We fetch samples that were inserted during seq-sync,
+        # which have sample aliases inserted already
+        # But their biosample_id value is still null
         samples = sql.get_samples_with_missing_ncbi_data(db, per_page=entrez.DEFAULT_PER_PAGE, last_id=last_id)
         if not samples:
             break
@@ -221,7 +227,8 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
         )
         last_id = samples[-1][1]
 
-        # Process accession-based samples
+        # We update these samples, filling up their biosample_id value
+        # and other metadata, if available
         acc_totals = process_accession_based_samples(db, entrez, samples, page_num, pages_total, normalization_data)
         page_totals.merge(acc_totals)
 
@@ -231,11 +238,15 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
         db.commit()
 
     # Process date-based samples in batches of 1000
+    # These are the samples that have not been inserted during seq-sync
     log.info("Starting the samples data retrieval")
     log.info("Processing samples based on relative date %d...", relative_date)
     date_totals = Stats()
 
     for date_ids, page_num, pages_total in entrez.get_biosample_ids(relative_date):
+        # Shouldn't we first exclude all samples that we already inserted in the db ?
+        # That sounds easier
+        
         log.info(
             "[Date-based Page %s/%s] Processing batch of %d sample IDs from relative date search",
             page_num,

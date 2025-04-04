@@ -51,22 +51,29 @@ def extract_biosample(
     # Insert the sample information
     ##################################################
 
-    # Try to find a matching sample
+    # If the sample entry does not exist already
     if is_empty:
         alias_id = db_sample_id = None
         package_id = tmp_package_id
+        # Not sure biosample_name can be None...?
         biosample_name = biosample_name.text if biosample_name is not None else biosample_id
         aliases = [
             NewSampleAlias(
                 tmp_package_id=package_id,
                 sample_id=db_sample_id,
                 name=alias[0],
+                # I am not sure that the SRS alias will exist as we are searching
+                # for samples that do not have sequencing data associated
                 alias_type="SRS" if alias[1] == "SRA" else alias[1],
                 alias_label="Sample name",
             )
             for alias in sample_aliases
         ]
     else:
+        # The sample row exist already, fetch it
+        # We search the list of samples that we retrieved from the db
+        # by the alias value retrieved from the NCBI XML
+
         biosample_name, db_sample_id, package_id, alias_id = next(
             (biosample_name, matched_sample_id, package_id, alias_id)
             for biosample_name, matched_sample_id, package_id, alias_id in samples

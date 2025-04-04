@@ -7,14 +7,14 @@ This repository holds both terraform configuration files and python application 
 This repository must be deployed after the main infrastructure [repository](https://github.com/finddx/tbsequencing-infrastructure).
 
 # Terraform 
-You can use a local backend for deploying, or the same S3 and DynamoDB backend you might have set up for the main infrastructure [repository](https://github.com/finddx/tbsequencing-infrastructure). Be careful to set a new key for the terraform state object. Refer to our [GitHub composite action](https://github.com/finddx/configure-terraform-backend/blob/main/action.yml) for reference for setting up the backend file.
+You can use a local backend for deploying, or the same S3 and DynamoDB backend you might have set up for the main infrastructure [repository](https://github.com/finddx/tbsequencing-infrastructure). Be careful to set a new key for the terraform state object file. We use a backend file with empty values for resources that we set up via the [command line and secret variables](https://github.com/WorldHealthOrganization/tbsequencing-ncbi-sync/blob/main/.github/workflows/terraform-plan.yml) during CICD.
 
 The repository will deploy the following:
 - AWS Batch resources for handling jobs
 - Eventbridge rules to schedule synchronization (disabled by default)
 - Step Function workflow for orchestrating the jobs
 
-For deployment, there are no other dependancies than having the main infrastructure repository deployed.
+For deployment, there are no other dependencies than having the main infrastructure repository deployed.
 
 There are only three terraform variable to set up:
 - project_name

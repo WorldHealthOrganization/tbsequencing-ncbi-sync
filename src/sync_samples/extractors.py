@@ -232,7 +232,7 @@ def get_country(biosample_xml) -> tuple[Optional[str], Optional[str]]:
                 code = str(country[0].alpha_3)
             else:
                 print(raw_geo_data, country, biosample_xml.attrib["accession"])
-                raise ValueError
+                pass
         except LookupError:
             if raw_geo_data in locations.keys():
                 code = locations[raw_geo_data].alpha_3

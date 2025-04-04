@@ -1,11 +1,11 @@
 from src.common import logs
-from src.sync_samples.models import NormalizationData, ResistanceRecord, Sample
+from src.sync_samples.models import NormalizationData, ResistanceRecord
 
 log = logs.create_logger(__name__)
 
 
 def extract_resistance_data(
-    biosample_xml, sample: Sample, normalization_data: NormalizationData
+    biosample_xml, normalization_data: NormalizationData
 ) -> list[ResistanceRecord]:
     table = biosample_xml.findall("Description/Comment/Table")
 
@@ -19,7 +19,13 @@ def extract_resistance_data(
         columns = {
             headers[y].text: y
             for y in range(len(headers))
-            if headers[y].text in ("Antibiotic", "Resistance phenotype", "DST Method", "Critical Concentration")
+            if headers[y].text
+            in (
+                "Antibiotic",
+                "Resistance phenotype",
+                "DST Method",
+                "Critical Concentration",
+            )
         }
         for test in i.findall("Body/Row"):
             cells = test.findall("Cell")
@@ -38,10 +44,16 @@ def extract_resistance_data(
             elif cells[columns["DST Method"]].text.strip() == "Agar proportion":
                 medium = "Agar"
                 method = "Proportions"
-            elif cells[columns["DST Method"]].text.strip() == "Lowenstein-Jensen, resistance ratio":
+            elif (
+                cells[columns["DST Method"]].text.strip()
+                == "Lowenstein-Jensen, resistance ratio"
+            ):
                 medium = "LJ"
                 method = "Resistance Ratio"
-            elif cells[columns["DST Method"]].text.strip() == "Lowenstein-Jensen, absolute concentration":
+            elif (
+                cells[columns["DST Method"]].text.strip()
+                == "Lowenstein-Jensen, absolute concentration"
+            ):
                 medium = "LJ"
                 method = ""
             elif cells[columns["DST Method"]].text.strip() in ("BACTEC460", "MGIT960"):
@@ -62,7 +74,9 @@ def extract_resistance_data(
             )
 
             if record.drug is None:
-                log.warning("Cannot find a drug %s, skipping the PDST record", drug_name)
+                log.warning(
+                    "Cannot find a drug %s, skipping the PDST record", drug_name
+                )
                 continue
             records.append(record)
     return records

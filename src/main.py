@@ -2,7 +2,7 @@ import argparse
 import boto3
 import json
 
-#import sentry_sdk
+# import sentry_sdk
 
 from src.common.logs import set_global_debug
 from src.db.database import Connection
@@ -34,12 +34,8 @@ def main(args):
             dep_entrez = EntrezAdvanced(args.ncbi_email, args.ncbi_key, args.caching)
         else:
             session = boto3.session.Session()
-            client = session.client(
-                service_name='secretsmanager',
-            )
-            get_secret_value_response = client.get_secret_value(
-                SecretId=args.ncbi_secret_arn
-            )
+            client = session.client(service_name="secretsmanager")
+            get_secret_value_response = client.get_secret_value(SecretId=args.ncbi_secret_arn)
             secret = json.loads(get_secret_value_response["SecretString"])
 
             dep_entrez = EntrezAdvanced(secret["email"], secret["api_key"], args.caching)
@@ -47,7 +43,7 @@ def main(args):
         if args.section == "sequencing":
             sync_sequencing_data(dep_db, dep_entrez, int(args.relative_date), str(args.bioproject_accession))
         elif args.section == "samples":
-            sync_samples(dep_db, dep_entrez)
+            sync_samples(dep_db, dep_entrez, int(args.relative_date))
         elif args.section == "projects":
             sync_projects(dep_db, dep_entrez)
         else:
@@ -61,7 +57,9 @@ if __name__ == "__main__":
     parser.add_argument("--db_user", help="Database user name (with AWS RDS IAM authentication)", default="postgres")
     parser.add_argument("--db_password", help="Database password or RDS authentication switch", default="RDS")
     parser.add_argument("--db_port", type=int, help="Database port", default=5433)
-    search_group = parser.add_argument_group("Search option", "Define the search for initiating the sequencing data synchronization.")
+    search_group = parser.add_argument_group(
+        "Search option", "Define the search for initiating the sequencing data synchronization."
+    )
     search_exclusive = search_group.add_mutually_exclusive_group()
     search_exclusive.add_argument("--bioproject_accession", type=str, default="", help="BioProject accession")
     search_exclusive.add_argument("--relative_date", type=int, default=0, help="Relative date")

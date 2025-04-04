@@ -76,6 +76,21 @@ data "aws_iam_policy_document" "step-func" {
 }
 
 
+data "aws_iam_policy_document" "s3-put-csv-file" {
+  version = "2012-10-17"
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+    ]
+    resources = [
+      "${data.aws_ssm_parameter.static_bucket_name.value}/*",
+    ]
+  }
+}
+
+
+
 data "aws_iam_policy_document" "eb" {
   version = "2012-10-17"
   statement {

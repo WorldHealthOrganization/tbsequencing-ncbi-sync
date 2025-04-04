@@ -14,6 +14,10 @@ data "aws_ssm_parameter" "db_port" {
   name = "/${var.environment}/db_port"
 }
 
+data "aws_ssm_parameter" "static_bucket_name" {
+  name = "/${var.environment}/static_bucket_name"
+}
+
 data "aws_subnets" "public-a" {
   filter {
     name   = "tag:Name"

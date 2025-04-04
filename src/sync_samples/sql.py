@@ -42,6 +42,46 @@ def update_samples(db: Connection, items: list[Sample]):
     )
 
 
+def create_samples(db: Connection, items: list[Sample]) -> list[int]:
+    curr = db.cursor()
+    results = execute_many_with_return(
+        curr,
+        """
+        INSERT INTO "submission_sample" (
+            package_id,
+            biosample_id,
+            ncbi_taxon_id,
+            submission_date,
+            sampling_date,
+            latitude,
+            longitude,
+            country_id,
+            additional_geographical_information,
+            isolation_source,
+            origin
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
+    """,
+        [
+            (
+                item.package_id,
+                item.biosample_id,
+                item.ncbi_taxon_id,
+                item.submission_date,
+                item.sampling_date,
+                item.latitude,
+                item.longitude,
+                item.country_id,
+                item.geo_loc_name,
+                item.isolation_source,
+                "NCBI",
+            )
+            for item in items
+        ],
+    )
+    return [row[0] for row in results]
+
+
 def get_samples_with_missing_ncbi_data_count(db: Connection) -> int:
     curr = db.cursor()
     curr.execute(

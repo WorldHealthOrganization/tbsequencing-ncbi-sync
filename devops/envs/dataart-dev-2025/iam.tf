@@ -38,6 +38,11 @@ locals {
       name        = "eb-rule"
       description = ""
       policy      = data.aws_iam_policy_document.eb.json
+    },
+    {
+      name        = "s3-put-csv-file"
+      description = ""
+      policy      = data.aws_iam_policy_document.s3-put-csv-file.json
     }
   ]
   policy_mapping = {
@@ -52,6 +57,10 @@ locals {
     ecs_task_ncbi_secret_access = {
       role   = aws_iam_role.fargate_task.name
       policy = data.aws_iam_policy.ncbi_secret_access.arn
+    },
+    ecs_task_s3_writting = {
+      role   = aws_iam_role.fargate_task.name
+      policy = module.policies.policy_arn["s3-put-csv-file"]
     },
     eb = {
       role   = aws_iam_role.scheduled_rule.name

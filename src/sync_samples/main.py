@@ -16,6 +16,7 @@ from src.sync_sequencing_data.sql import (
     get_samples_by_sample_aliases,
     insert_sample_aliases,
     get_or_create_temporary_ncbi_package,
+    get_positive_biosample_ids,
 )
 
 log = logs.create_logger(__name__)
@@ -242,11 +243,13 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     log.info("Starting the samples data retrieval")
     log.info("Processing samples based on relative date %d...", relative_date)
     date_totals = Stats()
+    date_ids_total = entrez.get_biosample_ids(relative_date)
 
-    for date_ids, page_num, pages_total in entrez.get_biosample_ids(relative_date):
-        # Shouldn't we first exclude all samples that we already inserted in the db ?
-        # That sounds easier
-        
+    # lets first exclude biosample ids we already have in the db
+    date_ids = set(date_ids_total) - set(get_positive_biosample_ids(db))
+    
+    for date_ids, page_num, pages_total in list(date_ids):
+
         log.info(
             "[Date-based Page %s/%s] Processing batch of %d sample IDs from relative date search",
             page_num,

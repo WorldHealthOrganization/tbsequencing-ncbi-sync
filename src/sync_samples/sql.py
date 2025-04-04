@@ -110,7 +110,6 @@ def get_positive_biosample_ids(db: Connection) -> list[int]:
     return [id[0] for id in ids]  # type: ignore
 
 
-
 def get_samples_with_missing_ncbi_data(db: Connection, per_page: int, last_id: int) -> list[tuple[str, int, int, int]]:
     curr = db.cursor()
     curr.execute(

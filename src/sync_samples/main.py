@@ -248,6 +248,10 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     # Lets try to exclude biosamples we already have in the db from the search
     known_biosample_ids = get_positive_biosample_ids(db)
 
+    log.info(
+        "%s already known biosamples from INSDC.", len(known_biosample_ids)
+    )
+
     for date_ids, page_num, pages_total in entrez.get_biosample_ids(relative_date):
         log.info(
             "[Date-based Page %s/%s] Processing batch of %d sample IDs from relative date search",
@@ -255,11 +259,15 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
             pages_total,
             len(date_ids),
         )
+        processing = list(set(date_ids)-set(known_biosample_ids))
+        log.info(
+            "Only processing %s samples from batch after excluding already known", len(processing)
+        )
 
         batch_totals = process_date_based_samples(
             db,
             entrez,
-            list(set(date_ids)-set(known_biosample_ids)),
+            processing,
             normalization_data
             )
         date_totals.merge(batch_totals)

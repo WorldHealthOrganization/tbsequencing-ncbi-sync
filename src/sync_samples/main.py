@@ -259,7 +259,7 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
             pages_total,
             len(date_ids),
         )
-        processing = list(set(date_ids)-set(known_biosample_ids))
+        processing = list(set([str(x) for x in date_ids])-set([str(x) for x in known_biosample_ids]))
         log.info(
             "Only processing %s samples from batch after excluding already known", len(processing)
         )

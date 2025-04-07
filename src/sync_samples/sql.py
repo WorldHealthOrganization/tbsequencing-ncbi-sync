@@ -96,20 +96,6 @@ def get_samples_with_missing_ncbi_data_count(db: Connection) -> int:
     return samples_count[0]
 
 
-def get_positive_biosample_ids(db: Connection) -> list[int]:
-    curr = db.cursor()
-    curr.execute(
-        """
-            SELECT s.biosample_id 
-            FROM sample s
-            WHERE
-                s.biosample_id>0
-        """,
-    )
-    ids  = curr.fetchall()
-    return [id[0] for id in ids]  # type: ignore
-
-
 def get_samples_with_missing_ncbi_data(db: Connection, per_page: int, last_id: int) -> list[tuple[str, int, int, int]]:
     curr = db.cursor()
     curr.execute(

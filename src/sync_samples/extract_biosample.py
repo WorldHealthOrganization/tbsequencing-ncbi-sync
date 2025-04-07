@@ -14,7 +14,6 @@ def extract_biosample(
     samples, biosample_xml, normalization_data: NormalizationData, tmp_package_id: int, is_empty: bool = False
 ) -> Optional[Sample]:
     biosample_id: str = biosample_xml.attrib["id"]
-    biosample_name: str = biosample_xml.attrib["accession"]
 
     organism_name = biosample_xml.find("Description/Organism").attrib["taxonomy_name"]
     organism_id = int(biosample_xml.find("Description/Organism").attrib["taxonomy_id"])
@@ -59,22 +58,24 @@ def extract_biosample(
     if is_empty:
         alias_id = db_sample_id = None
         package_id = tmp_package_id
+        biosample_accession: str = biosample_xml.attrib["accession"]
+
         # We need to make sure aliases insertion is consistent with samples that were
         # pre-inserted during seq-sync
         # During seq-sync, we insert normal sample aliases from BioSample and SRS
         # and then for these we inserted concatenated strings (see below)
         sample_aliases.append(
-            (f"{biosample_name}__{biosample_name}", "BioSample", "")
+            (f"{biosample_accession}__{biosample_accession}", "BioSample", "")
         )
         aliases = [
             NewSampleAlias(
                 tmp_package_id=package_id,
                 sample_id=db_sample_id,
-                name=alias[0] if alias[1] in ("SRA", "BioSample") else f"{biosample_name}__{alias[0]}",
+                name=alias[0] if alias[1] in ("SRA", "BioSample") else f"{biosample_accession}__{alias[0]}",
                 # I am not sure that the SRS alias will exist as we are searching
                 # for samples that do not have sequencing data associated
                 alias_type="SRS" if alias[1] == "SRA" else alias[1],
-                alias_label="Sample name" if ((alias[1] in ("SRA", "BioSample")) and alias[0]!=f"{biosample_name}__{biosample_name}") else alias[2],
+                alias_label="Sample name" if ((alias[1] in ("SRA", "BioSample")) and alias[0]!=f"{biosample_accession}__{biosample_accession}") else alias[2],
             )
             for alias in sample_aliases
         ]

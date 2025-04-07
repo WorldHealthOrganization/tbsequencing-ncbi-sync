@@ -100,7 +100,7 @@ def get_positive_biosample_ids(db: Connection) -> list[int]:
     curr.execute(
         """
             SELECT s.biosample_id 
-            FROM sample s
+            FROM submission_sample s
             WHERE
                 s.biosample_id>0
         """,

@@ -203,6 +203,7 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     normalization_data = get_normalisation_data(db)
 
     total_count = sql.get_samples_with_missing_ncbi_data_count(db)
+
     pages_total = math.ceil(total_count / entrez.DEFAULT_PER_PAGE)
 
     log.info("Found %s samples to be updated", total_count)
@@ -243,13 +244,11 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     log.info("Starting the samples data retrieval")
     log.info("Processing samples based on relative date %d...", relative_date)
     date_totals = Stats()
-    date_ids_total = entrez.get_biosample_ids(relative_date)
 
-    # lets first exclude biosample ids we already have in the db
-    date_ids = set(date_ids_total) - set(get_positive_biosample_ids(db))
-    
-    for date_ids, page_num, pages_total in list(date_ids):
+    # Lets try to exclude biosamples we already have in the db from the search
+    known_biosample_ids = get_positive_biosample_ids(db)
 
+    for date_ids, page_num, pages_total in entrez.get_biosample_ids(relative_date):
         log.info(
             "[Date-based Page %s/%s] Processing batch of %d sample IDs from relative date search",
             page_num,
@@ -257,7 +256,12 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
             len(date_ids),
         )
 
-        batch_totals = process_date_based_samples(db, entrez, date_ids, normalization_data)
+        batch_totals = process_date_based_samples(
+            db,
+            entrez,
+            list(set(date_ids)-set(known_biosample_ids)),
+            normalization_data
+            )
         date_totals.merge(batch_totals)
         db.commit()
 

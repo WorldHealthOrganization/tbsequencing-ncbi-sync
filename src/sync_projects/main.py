@@ -118,7 +118,7 @@ def link_to_bioproject(db: Connection, entrez: EntrezAdvanced, linked_object: st
                 )
 
         # Efetch on the bioproject to get full name, for creation
-        projects = entrez.get_projects(set(bioproject_object_reversed.keys()))
+        projects = entrez.get_projects(*list(set)(bioproject_object_reversed.keys()))
 
         for project in projects:
             # TODO: insert the bioproject name as well!!! EDIT (sacha): not sure about this TODO?
@@ -147,6 +147,7 @@ def link_to_bioproject(db: Connection, entrez: EntrezAdvanced, linked_object: st
         totals.merge(page_totals)
 
         db.commit()
+        break
 
     log.info("Total stats: %s", totals)
 
@@ -167,10 +168,18 @@ if __name__ == "__main__":
     parser.add_argument("--db_name", help="Database name", default="postgres")
     parser.add_argument("--db_user", help="Database user name (with AWS RDS IAM authentication)", default="postgres")
     parser.add_argument("--db_port", help="Database port", default=5433)
+    parser.add_argument("--db_password", help="Database password or RDS authentication switch", default="RDS")
+    parser.add_argument("--ncbi_email", default="", help="Email adress for NCBI registration")
+    parser.add_argument("--ncbi_key", default="", help="API key for NCBI registration")
+
+
     args = parser.parse_args()
 
     # TODO: Use the key arguments or better - a parameters store to retrieve the configs
-    dep_entrez = EntrezAdvanced("afakeemail@gmail.com", "afakeapikey", True)
+    if args.ncbi_email and args.ncbi_key:
+        dep_entrez = EntrezAdvanced(args.ncbi_email, args.ncbi_key, True)
+    else:
+        dep_entrez = EntrezAdvanced("afakeemail@gmail.com", "afakeapikey", True)
 
-    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user)
+    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user, args.db_password)
     main(dep_db, dep_entrez)

@@ -118,7 +118,7 @@ def link_to_bioproject(db: Connection, entrez: EntrezAdvanced, linked_object: st
                 )
 
         # Efetch on the bioproject to get full name, for creation
-        projects = entrez.get_projects(*list(set)(bioproject_object_reversed.keys()))
+        projects = entrez.get_projects(*list(set(bioproject_object_reversed.keys())))
 
         for project in projects:
             # TODO: insert the bioproject name as well!!! EDIT (sacha): not sure about this TODO?

@@ -24,13 +24,6 @@ def extract_biosample(
         )
         return None
 
-    sample_aliases = []
-    for id in biosample_xml.findall("Ids/Id"):
-        sample_aliases.append((id.text, id.attrib.get("db", "") or "NCBI_IDS", id.attrib.get("db_label", "")))
-    biosample_name = biosample_xml.find('Attributes/Attribute[@harmonized_name="sample_name"]')
-    if biosample_name is not None:
-        sample_aliases.append((biosample_name.text, "INSDC", ""))
-
     ################################################
     # Collect the biosample information
     ################################################
@@ -48,25 +41,60 @@ def extract_biosample(
     isolation_source = extractors.get_isolation_source(biosample_xml)
 
     ##################################################
-    # Insert the sample information
+    # Collect all sample alias information
     ##################################################
 
-    # Try to find a matching sample
+    srs_name = ""
+
+    sample_aliases = []
+    for id in biosample_xml.findall("Ids/Id"):
+        sample_aliases.append((id.text, id.attrib.get("db", "") or "NCBI_IDS", id.attrib.get("db_label", "")))
+        if id.attrib.get("db", "") == "SRA":
+            srs_name = id.text
+            
+    # Harmonized sample name is the sample name as provided by the submitter
+    # Sometimes it's not included in the Ids bloc
+    harmonized_name = biosample_xml.find('Attributes/Attribute[@harmonized_name="sample_name"]')
+    if harmonized_name is not None:
+        sample_aliases.append((harmonized_name.text, "INSDC", ""))
+
+    # If the sample entry does not exist already
     if is_empty:
         alias_id = db_sample_id = None
         package_id = tmp_package_id
-        biosample_name = biosample_name.text if biosample_name is not None else biosample_id
+        biosample_accession: str = biosample_xml.attrib["accession"]
+
+        # We need to make sure aliases insertion is consistent with samples that were
+        # pre-inserted during seq-sync
+        # During seq-sync, we insert normal sample aliases from BioSample and SRS
+        # and then for these we inserted concatenated strings (see below)
+        sample_aliases.append(
+            (biosample_accession, "CustomBioSample", "")
+        )
+
+        # For consistency with biosamples inserted after seq-sync
+        # we also include the composite alias "biosample__srs"
+        # SRS sometimes exists already although no seq data yet available
+        if srs_name:
+            sample_aliases.append(
+                (srs_name, "CustomSRA", "")
+            )
+
         aliases = [
             NewSampleAlias(
                 tmp_package_id=package_id,
                 sample_id=db_sample_id,
-                name=alias[0],
-                alias_type="SRS" if alias[1] == "SRA" else alias[1],
-                alias_label="Sample name",
+                name=alias[0] if alias[1] in ("SRA", "BioSample") else f"{biosample_accession}__{alias[0]}",
+                alias_type="SRS" if alias[1] == "SRA" else alias[1].replace("CustomBioSample", "BioSample").replace("CustomSRA", "SRA"),
+                alias_label="Sample name" if alias[1] in ("SRA", "BioSample") else alias[2],
             )
             for alias in sample_aliases
         ]
     else:
+        # The sample row exist already, fetch it
+        # We search the list of samples that we retrieved from the db
+        # by the alias value retrieved from the NCBI XML
+
         biosample_name, db_sample_id, package_id, alias_id = next(
             (biosample_name, matched_sample_id, package_id, alias_id)
             for biosample_name, matched_sample_id, package_id, alias_id in samples

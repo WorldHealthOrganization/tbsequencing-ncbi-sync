@@ -16,6 +16,7 @@ from src.sync_sequencing_data.sql import (
     get_samples_by_sample_aliases,
     insert_sample_aliases,
     get_or_create_temporary_ncbi_package,
+    get_positive_biosample_ids,
 )
 
 log = logs.create_logger(__name__)
@@ -127,6 +128,8 @@ def process_accession_based_samples(
         )
 
     if accession_ids:
+        # is empty is false because the sample row of these exist already
+        # (inserted during sync-sec)
         process_sample_batch(db, entrez, accession_ids, samples, page_totals, normalization_data, False)
 
     return page_totals
@@ -200,6 +203,7 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     normalization_data = get_normalisation_data(db)
 
     total_count = sql.get_samples_with_missing_ncbi_data_count(db)
+
     pages_total = math.ceil(total_count / entrez.DEFAULT_PER_PAGE)
 
     log.info("Found %s samples to be updated", total_count)
@@ -207,6 +211,10 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     while True:
         page_totals = Stats()
         page_num += 1
+        # Process accession-based samples
+        # We fetch samples that were inserted during seq-sync,
+        # which have sample aliases inserted already
+        # But their biosample_id value is still null
         samples = sql.get_samples_with_missing_ncbi_data(db, per_page=entrez.DEFAULT_PER_PAGE, last_id=last_id)
         if not samples:
             break
@@ -221,7 +229,8 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
         )
         last_id = samples[-1][1]
 
-        # Process accession-based samples
+        # We update these samples, filling up their biosample_id value
+        # and other metadata, if available
         acc_totals = process_accession_based_samples(db, entrez, samples, page_num, pages_total, normalization_data)
         page_totals.merge(acc_totals)
 
@@ -231,9 +240,13 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
         db.commit()
 
     # Process date-based samples in batches of 1000
+    # These are the samples that have not been inserted during seq-sync
     log.info("Starting the samples data retrieval")
     log.info("Processing samples based on relative date %d...", relative_date)
     date_totals = Stats()
+
+    # Lets try to exclude biosamples we already have in the db from the search
+    known_biosample_ids = get_positive_biosample_ids(db)
 
     for date_ids, page_num, pages_total in entrez.get_biosample_ids(relative_date):
         log.info(
@@ -243,7 +256,23 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
             len(date_ids),
         )
 
-        batch_totals = process_date_based_samples(db, entrez, date_ids, normalization_data)
+
+        # Make sure items in both list are all ints
+        processing = list(
+            set([int(x) for x in date_ids])-set(known_biosample_ids)
+        )
+
+        log.info(
+            "Only processing %s samples from batch after excluding already known",
+            len(processing)
+        )
+
+        batch_totals = process_date_based_samples(
+            db,
+            entrez,
+            processing,
+            normalization_data
+            )
         date_totals.merge(batch_totals)
         db.commit()
 
@@ -264,14 +293,22 @@ if __name__ == "__main__":
     parser.add_argument("--db_user", help="Database user name (with AWS RDS IAM authentication)", default="postgres")
     parser.add_argument("--db_port", help="Database port", default=5433)
     parser.add_argument("--relative_date", type=int, default=30, help="Relative date")
+    parser.add_argument("--db_password", help="Database password or RDS authentication switch", default="RDS")
+    parser.add_argument("--ncbi_email", default="", help="Email adress for NCBI registration")
+    parser.add_argument("--ncbi_key", default="", help="API key for NCBI registration")
+
     args = parser.parse_args()
 
     # TODO: Use the key arguments or better - a parameters store to retrieve the configs
     # Create a Secrets Manager client
 
-    dep_entrez = EntrezAdvanced("afakeemail@gmail.com", "afakeapikey", True)
+    # TODO: Use the key arguments or better - a parameters store to retrieve the configs
+    if args.ncbi_email and args.ncbi_key:
+        dep_entrez = EntrezAdvanced(args.ncbi_email, args.ncbi_key, True)
+    else:
+        dep_entrez = EntrezAdvanced("afakeemail@gmail.com", "afakeapikey", True)
 
-    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user)
+    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user, args.db_password)
 
     # Local debugging only
     set_global_debug(True)

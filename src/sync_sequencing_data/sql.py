@@ -95,6 +95,20 @@ def get_sequencingdata_by_hashes(db: Connection, hashes: Iterable[str]) -> dict[
     return {row[0]: int(row[1]) for row in curr.fetchmany(sys.maxsize)}
 
 
+def get_positive_biosample_ids(db: Connection) -> list[int]:
+    curr = db.cursor()
+    curr.execute(
+        """
+            SELECT s.biosample_id 
+            FROM submission_sample s
+            WHERE
+                s.biosample_id>0
+        """,
+    )
+    ids  = curr.fetchall()
+    return [id[0] for id in ids]  # type: ignore
+
+
 def get_samples_by_sample_aliases(db: Connection, sample_aliases: list[str]) -> list[SampleAliasMatched]:
     if not sample_aliases:
         return []

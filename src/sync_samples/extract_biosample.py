@@ -74,6 +74,7 @@ def extract_biosample(
 
         # For consistency with biosamples inserted after seq-sync
         # we also include the composite alias "biosample__srs"
+        # SRS sometimes exists already although no seq data yet available
         if srs_name:
             sample_aliases.append(
                 (srs_name, "CustomSRA", "")
@@ -84,8 +85,6 @@ def extract_biosample(
                 tmp_package_id=package_id,
                 sample_id=db_sample_id,
                 name=alias[0] if alias[1] in ("SRA", "BioSample") else f"{biosample_accession}__{alias[0]}",
-                # I am not sure that the SRS alias will exist as we are searching
-                # for samples that do not have sequencing data associated
                 alias_type="SRS" if alias[1] == "SRA" else alias[1].replace("CustomBioSample", "BioSample").replace("CustomSRA", "SRA"),
                 alias_label="Sample name" if alias[1] in ("SRA", "BioSample") else alias[2],
             )

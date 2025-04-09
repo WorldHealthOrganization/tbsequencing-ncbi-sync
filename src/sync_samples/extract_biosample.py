@@ -72,6 +72,8 @@ def extract_biosample(
             (biosample_accession, "CustomBioSample", "")
         )
 
+        # For consistency with biosamples inserted after seq-sync
+        # we also include the composite alias "biosample__srs"
         if srs_name:
             sample_aliases.append(
                 (srs_name, "CustomSRA", "")

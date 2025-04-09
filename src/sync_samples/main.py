@@ -248,10 +248,6 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     # Lets try to exclude biosamples we already have in the db from the search
     known_biosample_ids = get_positive_biosample_ids(db)
 
-    log.info(
-        "%s already known biosamples from INSDC.", len(known_biosample_ids)
-    )
-
     for date_ids, page_num, pages_total in entrez.get_biosample_ids(relative_date):
         log.info(
             "[Date-based Page %s/%s] Processing batch of %d sample IDs from relative date search",
@@ -260,14 +256,15 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
             len(date_ids),
         )
 
-        # Make sure items in both list are same types
-        # (int vs str)
+
+        # Make sure items in both list are all ints
         processing = list(
-            set([str(x) for x in date_ids])-set([str(x) for x in known_biosample_ids])
+            set([int(x) for x in date_ids])-set(known_biosample_ids)
         )
 
         log.info(
-            "Only processing %s samples from batch after excluding already known", len(processing)
+            "Only processing %s samples from batch after excluding already known",
+            len(processing)
         )
 
         batch_totals = process_date_based_samples(
@@ -305,9 +302,13 @@ if __name__ == "__main__":
     # TODO: Use the key arguments or better - a parameters store to retrieve the configs
     # Create a Secrets Manager client
 
-    dep_entrez = EntrezAdvanced("afakeemail@gmail.com", "afakeapikey", True)
+    # TODO: Use the key arguments or better - a parameters store to retrieve the configs
+    if args.ncbi_email and args.ncbi_key:
+        dep_entrez = EntrezAdvanced(args.ncbi_email, args.ncbi_key, True)
+    else:
+        dep_entrez = EntrezAdvanced("afakeemail@gmail.com", "afakeapikey", True)
 
-    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user)
+    dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user, args.db_password)
 
     # Local debugging only
     set_global_debug(True)

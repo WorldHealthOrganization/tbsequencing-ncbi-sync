@@ -147,7 +147,6 @@ def link_to_bioproject(db: Connection, entrez: EntrezAdvanced, linked_object: st
         totals.merge(page_totals)
 
         db.commit()
-        break
 
     log.info("Total stats: %s", totals)
 

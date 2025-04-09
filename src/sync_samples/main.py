@@ -296,6 +296,10 @@ if __name__ == "__main__":
     parser.add_argument("--db_user", help="Database user name (with AWS RDS IAM authentication)", default="postgres")
     parser.add_argument("--db_port", help="Database port", default=5433)
     parser.add_argument("--relative_date", type=int, default=30, help="Relative date")
+    parser.add_argument("--db_password", help="Database password or RDS authentication switch", default="RDS")
+    parser.add_argument("--ncbi_email", default="", help="Email adress for NCBI registration")
+    parser.add_argument("--ncbi_key", default="", help="API key for NCBI registration")
+
     args = parser.parse_args()
 
     # TODO: Use the key arguments or better - a parameters store to retrieve the configs

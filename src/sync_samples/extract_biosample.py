@@ -44,10 +44,14 @@ def extract_biosample(
     # Collect all sample alias information
     ##################################################
 
+    srs_name = ""
+
     sample_aliases = []
     for id in biosample_xml.findall("Ids/Id"):
         sample_aliases.append((id.text, id.attrib.get("db", "") or "NCBI_IDS", id.attrib.get("db_label", "")))
-
+        if id.attrib.get("db", "") == "SRA":
+            srs_name = id.text
+            
     # Harmonized sample name is the sample name as provided by the submitter
     # Sometimes it's not included in the Ids bloc
     harmonized_name = biosample_xml.find('Attributes/Attribute[@harmonized_name="sample_name"]')
@@ -68,6 +72,11 @@ def extract_biosample(
             (biosample_accession, "CustomBioSample", "")
         )
 
+        if srs_name:
+            sample_aliases.append(
+                (f"{biosample_accession}__{srs_name}", "CustomSRA", "")
+            )   
+
         aliases = [
             NewSampleAlias(
                 tmp_package_id=package_id,
@@ -75,7 +84,7 @@ def extract_biosample(
                 name=alias[0] if alias[1] in ("SRA", "BioSample") else f"{biosample_accession}__{alias[0]}",
                 # I am not sure that the SRS alias will exist as we are searching
                 # for samples that do not have sequencing data associated
-                alias_type="SRS" if alias[1] == "SRA" else alias[1].replace("CustomBioSample", "BioSample"),
+                alias_type="SRS" if alias[1] == "SRA" else alias[1].replace("CustomBioSample", "BioSample").replace("CustomSRA", "SRA"),
                 alias_label="Sample name" if alias[1] in ("SRA", "BioSample") else alias[2],
             )
             for alias in sample_aliases

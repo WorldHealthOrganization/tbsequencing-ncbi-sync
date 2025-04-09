@@ -74,8 +74,8 @@ def extract_biosample(
 
         if srs_name:
             sample_aliases.append(
-                (f"{biosample_accession}__{srs_name}", "CustomSRA", "")
-            )   
+                (srs_name, "CustomSRA", "")
+            )
 
         aliases = [
             NewSampleAlias(

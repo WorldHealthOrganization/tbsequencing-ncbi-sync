@@ -13,7 +13,7 @@ class EntrezAdvanced(EntrezBase):
 
     def get_sra_ids(self, reldate: int, biopro: str) -> Generator[tuple[list[int], int, int], None, None]:
         if biopro:
-            return self.esearch(DB.SRA, biopro+"[BIOPROJECT]")    
+            return self.esearch(DB.SRA, biopro + "[BIOPROJECT]")
         return self.esearch(DB.SRA, "MYCOBACTERIUM[ORGN]", reldate=reldate)
 
     def get_biosample_ids(self, reldate: int) -> Generator[tuple[list[int], int, int], None, None]:
@@ -34,8 +34,10 @@ class EntrezAdvanced(EntrezBase):
                 title = item.find("Project/ProjectDescr/Title").text
                 try:
                     descr = (
-                        item.find("Project/ProjectDescr/Description").text.strip()
-                        .replace("\r", ".").replace("\n", ".")
+                        item.find("Project/ProjectDescr/Description")
+                        .text.strip()
+                        .replace("\r", ".")
+                        .replace("\n", ".")
                     )
                 except AttributeError:
                     descr = None
@@ -48,15 +50,7 @@ class EntrezAdvanced(EntrezBase):
                 except AttributeError:
                     owner = None
 
-                results.append(BioProject(
-                    xid,
-                    name,
-                    title,
-                    origin,
-                    descr,
-                    submission_date,
-                    owner,
-                ))
+                results.append(BioProject(xid, name, title, origin, descr, submission_date, owner))
             except Exception:
                 try:
                     error = item.find("error").text

@@ -29,6 +29,7 @@ def create_ncbi_package(db: Connection, name: str) -> int:
     new_ncbi_temporary_package_id = result[0]
     return new_ncbi_temporary_package_id
 
+
 def get_or_create_temporary_ncbi_package(db: Connection, name: str = '[SYSTEM] NCBI Sync temporary project') -> int:
     curr = db.cursor()
 
@@ -84,7 +85,8 @@ def get_sequencingdata_by_hashes(db: Connection, hashes: Iterable[str]) -> dict[
         """
         SELECT submission_sequencingdatahash.value, submission_sample.id
         FROM submission_sequencingdatahash
-        LEFT JOIN submission_sequencingdata ON submission_sequencingdata.id = submission_sequencingdatahash.sequencing_data_id
+        LEFT JOIN submission_sequencingdata
+            ON submission_sequencingdata.id = submission_sequencingdatahash.sequencing_data_id
         LEFT JOIN submission_sample ON submission_sequencingdata.sample_id = submission_sample.id
         WHERE submission_sequencingdatahash.value = ANY(%s);
     """,
@@ -92,6 +94,19 @@ def get_sequencingdata_by_hashes(db: Connection, hashes: Iterable[str]) -> dict[
     )
     return {row[0]: int(row[1]) for row in curr.fetchmany(sys.maxsize)}
 
+
+def get_positive_biosample_ids(db: Connection) -> list[int]:
+    curr = db.cursor()
+    curr.execute(
+        """
+            SELECT s.biosample_id 
+            FROM submission_sample s
+            WHERE
+                s.biosample_id>0
+        """,
+    )
+    ids  = curr.fetchall()
+    return [id[0] for id in ids]  # type: ignore
 
 
 def get_samples_by_sample_aliases(db: Connection, sample_aliases: list[str]) -> list[SampleAliasMatched]:

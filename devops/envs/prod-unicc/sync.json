@@ -161,6 +161,7 @@
         "JobDefinition": "${JobDefinitionSync}",
         "JobQueue": "${JobQueueArn}",
         "Parameters": {
+          "RELATIVE_DATE.$": "States.JsonToString($.ParametersWithDefaults.RelativeDate)",
           "DB_HOST": "${DbHost}",
           "DB_NAME": "${DbName}",
           "DB_USER": "${DbUser}",
@@ -169,6 +170,30 @@
           "NCBI_SECRET": "${NcbiSecret}",
           "SECTION": "samples",
           "DEBUG.$": "States.JsonToString($.ParametersWithDefaults.Debug)"
+        },
+        "ContainerOverrides": {
+          "Command": [
+            "python",
+            "/app/src/main.py",
+            "--section",
+            "Ref::SECTION",
+            "--db_host",
+            "Ref::DB_HOST",
+            "--db_name",
+            "Ref::DB_NAME",
+            "--db_user",
+            "Ref::DB_USER",
+            "--db_password",
+            "Ref::DB_PASSWORD",
+            "--db_port",
+            "Ref::DB_PORT",
+            "--relative_date",
+            "Ref::RELATIVE_DATE",
+            "--ncbi_secret_arn",
+            "Ref::NCBI_SECRET",
+            "--set_debug",
+            "Ref::DEBUG"
+          ]
         }
       },
       "Next": "SyncProjects"

@@ -11,7 +11,7 @@ class SampleAliasMatched:
 @dataclass
 class NewSampleAlias:
     tmp_package_id: int
-    sample_id: int
+    sample_id: int | None
     name: str
     alias_type: str
     alias_label: str

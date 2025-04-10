@@ -7,14 +7,14 @@ This repository holds both terraform configuration files and python application 
 This repository must be deployed after the main infrastructure [repository](https://github.com/finddx/tbsequencing-infrastructure).
 
 # Terraform 
-You can use a local backend for deploying, or the same S3 and DynamoDB backend you might have set up for the main infrastructure [repository](https://github.com/finddx/tbsequencing-infrastructure). Be careful to set a new key for the terraform state object. Refer to our [GitHub composite action](https://github.com/finddx/configure-terraform-backend/blob/main/action.yml) for reference for setting up the backend file.
+You can use a local backend for deploying, or the same S3 and DynamoDB backend you might have set up for the main infrastructure [repository](https://github.com/finddx/tbsequencing-infrastructure). Be careful to set a new key for the terraform state object file. We use a backend file with empty values for resources that we set up via the [command line and secret variables](https://github.com/WorldHealthOrganization/tbsequencing-ncbi-sync/blob/main/.github/workflows/terraform-plan.yml) during CICD.
 
 The repository will deploy the following:
 - AWS Batch resources for handling jobs
 - Eventbridge rules to schedule synchronization (disabled by default)
 - Step Function workflow for orchestrating the jobs
 
-For deployment, there are no other dependancies than having the main infrastructure repository deployed.
+For deployment, there are no other dependencies than having the main infrastructure repository deployed.
 
 There are only three terraform variable to set up:
 - project_name
@@ -22,6 +22,29 @@ There are only three terraform variable to set up:
 - aws_region
 
 They must be equal to the values used in the main repository.
+
+For CICD, the following variables are necessary: 
+
+| Variables/Secrets for CICD | Description|
+|---|----|
+|AWS_ACCOUNT_ID||
+|AWS_REGION||
+|PROJECT_NAME| As defined in the infrastructure repository|
+
+
+
+## INSDC synchronization
+One of the step workflow will run daily (if enabled) and will synchronize our database with new sample data available at the INSDC. All synchronization is performed by using the different tools of the [NCBI Entrez API](https://www.ncbi.nlm.nih.gov/books/NBK25501/) (esearch, efetch, elink). The logic is the following: 
+
+1. Search newly submitted sequencing data with the term “MYCOBACTERIUM” in the organism attribute value.
+2. Insert the new records into the sequencingdata table
+3. Using elink, search for all BioSamples associated with these newly inserted sequencing data and insert the new records into our sample and samplealias tables
+4. Using elink, search for all BioProject associated with these newly inserted samples and insert the new records into our package table
+
+
+## NCBI Taxonomy synchronization
+
+Our database is also synchronized with the NCBI taxonomy, via the tables that we imported from the bioSQL schema. We use scripts (in perl) provided by the [bioSQL](https://github.com/biosql/biosql) community to synchronize our taxonomy. We synchronize the taxonomy every 3 months.
 
 # Application Code
 

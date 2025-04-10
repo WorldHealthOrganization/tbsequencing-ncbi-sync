@@ -46,7 +46,10 @@ class EntrezLow:
         Entrez.email = email
         Entrez.api_key = api_key
 
-        self.cache = Cached(os.path.join(os.path.dirname(__file__), "..", "..", "cached"), enable_caching)
+        self.cache = Cached(
+            os.path.join(os.path.dirname(__file__), "..", "..", "cached"),
+            enable_caching,
+        )
 
     # pylint: disable=too-many-arguments
     def raw_esearch(
@@ -67,7 +70,9 @@ class EntrezLow:
             retmax,
         )
 
-        payload = dict(db=db, term=term, datetype=datetype, retstart=retstart, retmax=retmax)
+        payload = dict(
+            db=db, term=term, datetype=datetype, retstart=retstart, retmax=retmax
+        )
 
         # optional arguments
         if reldate is not None:
@@ -101,11 +106,21 @@ class EntrezLow:
                 )
                 time.sleep(attempts * 5)
             except Exception as e:
-                log.warning("[ESearch] [Attempt %s] Unknown error reaching out to the Entrez: %s", attempts, e)
+                log.warning(
+                    "[ESearch] [Attempt %s] Unknown error reaching out to the Entrez: %s",
+                    attempts,
+                    e,
+                )
                 time.sleep(attempts * 5)
 
     def raw_efetch(self, db: str, ids: Iterable[int], retstart=0, retmax=10000):
-        log.debug("[EFetch] Low API call db=%s: retstart=%s, retmax=%s, ids=%s", db, retstart, retmax, ids)
+        log.debug(
+            "[EFetch] Low API call db=%s: retstart=%s, retmax=%s, ids=%s",
+            db,
+            retstart,
+            retmax,
+            ids,
+        )
 
         attempts = 0
         max_attempts = 10
@@ -121,7 +136,9 @@ class EntrezLow:
 
             attempts += 1
             try:
-                resp = Entrez.efetch(db=db, id=",".join(map(str, ids)), retstart=retstart, retmax=retmax)
+                resp = Entrez.efetch(
+                    db=db, id=",".join(map(str, ids)), retstart=retstart, retmax=retmax
+                )
 
                 xml, raw = self.raw_efetch_parse(resp)
                 self.cache.set(raw, db, ids, retstart, retmax)
@@ -137,7 +154,11 @@ class EntrezLow:
                 )
                 time.sleep(attempts * 5)
             except Exception as e:
-                log.warning("[EFetch] [Attempt %s] Unknown error reaching out to the Entrez: %s", attempts, e)
+                log.warning(
+                    "[EFetch] [Attempt %s] Unknown error reaching out to the Entrez: %s",
+                    attempts,
+                    e,
+                )
                 time.sleep(attempts * 5)
 
     def raw_efetch_parse(self, response: Any) -> tuple[Any, str]:
@@ -160,13 +181,18 @@ class EntrezLow:
 
                 return ET.fromstring(raw_xml), raw_xml.decode("utf8")
             except ET.ParseError as e:
-                log.warning("[EFetch] [Attempt %s] Parse error: %s. Content: %s", attempts, e, raw_xml)
+                log.warning(
+                    "[EFetch] [Attempt %s] Parse error: %s. Content: %s",
+                    attempts,
+                    e,
+                    raw_xml,
+                )
                 time.sleep(attempts * 10)
             except IncompleteRead as e:
                 log.warning("[EFetch] [Attempt %s] Imcomplete read: %s", attempts, e)
                 time.sleep(attempts * 60)
 
-    def raw_elink(self, dbfrom: str, dbto: str, ids: list[int], link:str):
+    def raw_elink(self, dbfrom: str, dbto: str, ids: list[int], link: str):
         log.debug("[ELink] Low API call dbfrom=%s, dbto=%s: ids=%s", dbfrom, dbto, ids)
 
         payload = dict(dbfrom=dbfrom, db=dbto, id=ids, linkname=link)
@@ -181,7 +207,6 @@ class EntrezLow:
             try:
                 resp = Entrez.read(Entrez.elink(**payload), validate=True)
                 return resp
-                # return int(resp["Count"]), resp["IdList"], resp
             except HTTPError as e:
                 error_message = e.read()
                 log.warning(
@@ -193,7 +218,11 @@ class EntrezLow:
                 )
                 time.sleep(attempts * 5)
             except Exception as e:
-                log.warning("[ESearch] [Attempt %s] Unknown error reaching out to the Entrez: %s", attempts, e)
+                log.warning(
+                    "[ESearch] [Attempt %s] Unknown error reaching out to the Entrez: %s",
+                    attempts,
+                    e,
+                )
                 time.sleep(attempts * 5)
 
 
@@ -232,15 +261,15 @@ class EntrezBase(EntrezLow):
 
         return self.raw_efetch(db=str(db.value), ids=ids, retstart=0, retmax=len(ids))
 
-    def elink(self, dbfrom: DB, dbto: DB, ids: list[int], link:str) -> list[int]:
+    def elink(self, dbfrom: DB, dbto: DB, ids: list[int], link: str) -> list[int]:
         log.info("[ELink] call dbfrom=%s, dbto=%s: ids=%s", dbfrom, dbto, ids)
 
         data = self.raw_elink(str(dbfrom.value), str(dbto.value), ids, link)
 
         if data:
             return {
-                int(x["IdList"][0]):int(x["LinkSetDb"][0]["Link"][0]["Id"])
-                for x in data 
-                if x["LinkSetDb"] and x["LinkSetDb"][0]["LinkName"]==link
+                int(x["IdList"][0]): int(x["LinkSetDb"][0]["Link"][0]["Id"])
+                for x in data
+                if x["LinkSetDb"] and x["LinkSetDb"][0]["LinkName"] == link
             }
         return {}

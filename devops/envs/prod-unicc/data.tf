@@ -40,3 +40,7 @@ data "aws_iam_policy" "rds_iam_access" {
 data "aws_secretsmanager_secret" "entrez" {
   name = "${var.environment}/ncbi-entrez"
 }
+
+data "aws_ssm_parameter" "static_files_bucket_name" {
+  name = "/${var.environment}/static_files_bucket_name"
+}

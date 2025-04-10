@@ -52,7 +52,10 @@ def save_samples(db: Connection, samples: list[Sample]) -> Stats:
     totals = Stats()
 
     # Separate samples into existing and new based on whether they have a db_sample_id
+    # (sacha) save_samples is called separately for each sync logic (accession-based, date-based)
+    # (sacha) so we never have both types of samples in the same list
     existing_samples, new_samples = [], []
+
     for sample in samples:
         (existing_samples if sample.db_sample_id else new_samples).append(sample)
 
@@ -296,6 +299,7 @@ if __name__ == "__main__":
     parser.add_argument("--db_password", help="Database password or RDS authentication switch", default="RDS")
     parser.add_argument("--ncbi_email", default="", help="Email adress for NCBI registration")
     parser.add_argument("--ncbi_key", default="", help="API key for NCBI registration")
+    parser.add_argument("--debug", action=argparse.BooleanOptionalAction, help="Logging level")
 
     args = parser.parse_args()
 
@@ -311,6 +315,6 @@ if __name__ == "__main__":
     dep_db = Connection(args.db_host, args.db_port, args.db_name, args.db_user, args.db_password)
 
     # Local debugging only
-    set_global_debug(True)
+    set_global_debug(args.debug)
 
     main(dep_db, dep_entrez, args.relative_date)

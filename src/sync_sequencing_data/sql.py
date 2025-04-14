@@ -109,6 +109,22 @@ def get_positive_biosample_ids(db: Connection) -> list[int]:
     return [id[0] for id in ids]  # type: ignore
 
 
+
+def get_biosample_ids_from_samplealias(db: Connection) -> list[int]:
+    curr = db.cursor()
+    curr.execute(
+        """
+            SELECT replace(ssa.name, 'SAMN', '')::int
+            FROM submission_samplealias ssa
+            WHERE ssa.origin='BioSample'
+                AND ssa.origin_label='Sample name'
+                AND ssa.name SIMILAR TO 'SAMN[0-9]+'
+        """,
+    )
+    ids  = curr.fetchall()
+    return [id[0] for id in ids]  # type: ignore
+
+
 def get_samples_by_sample_aliases(db: Connection, sample_aliases: list[str]) -> list[SampleAliasMatched]:
     if not sample_aliases:
         return []

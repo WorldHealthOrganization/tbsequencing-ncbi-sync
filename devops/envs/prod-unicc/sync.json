@@ -188,7 +188,7 @@
             "--db_port",
             "Ref::DB_PORT",
             "--relative_date",
-            "Ref::RELATIVE_DATE",
+            "0",
             "--ncbi_secret_arn",
             "Ref::NCBI_SECRET",
             "--set_debug",

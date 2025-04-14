@@ -58,11 +58,12 @@ def save_samples(db: Connection, samples: list[Sample]) -> Stats:
     existing_samples, new_samples = [], []
 
     for sample in samples:
-
         # add check here that samples should not go into new sample if their alias
-        # already exists
-
-        (existing_samples if sample.db_sample_id else new_samples).append(sample)
+        # already exist
+        if sample.db_sample_id or get_samples_by_sample_aliases([alias.name for alias in sample.additional_aliases]):
+            existing_samples.append(sample)
+        else:
+            new_samples.append(sample)
 
     # Update existing samples in the database
     sql.update_samples(db, existing_samples)

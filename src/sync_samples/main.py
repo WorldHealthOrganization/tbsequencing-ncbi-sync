@@ -17,6 +17,7 @@ from src.sync_sequencing_data.sql import (
     insert_sample_aliases,
     get_or_create_temporary_ncbi_package,
     get_positive_biosample_ids,
+    get_biosample_ids_from_samplealias,
 )
 
 log = logs.create_logger(__name__)
@@ -57,7 +58,20 @@ def save_samples(db: Connection, samples: list[Sample]) -> Stats:
     existing_samples, new_samples = [], []
 
     for sample in samples:
-        (existing_samples if sample.db_sample_id else new_samples).append(sample)
+        # add check here that samples should not go into new sample if their alias
+        # already exist
+        if sample.db_sample_id:
+            existing_samples.append(sample)
+        elif get_samples_by_sample_aliases(db, [alias.name for alias in sample.additional_aliases]):
+            log.warning(
+                "Detected biosample %s which was merged to another biosample already. " 
+                "Skipping insertion.",
+                sample.biosample_id
+            )
+            totals.increment("biosample_already_merged_by_md5")
+            pass
+        else:
+            new_samples.append(sample)
 
     # Update existing samples in the database
     sql.update_samples(db, existing_samples)
@@ -249,7 +263,23 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
     date_totals = Stats()
 
     # Lets try to exclude biosamples we already have in the db from the search
-    known_biosample_ids = get_positive_biosample_ids(db)
+    known_biosample_from_sample = get_positive_biosample_ids(db)
+
+    # In the case of samples merged by md5sum, the biosample id 
+    # does not exist in the database but we already have the alias
+    # So we need to exclude these from the sync as well
+    # Otherwise we would insert these new biosample ids 
+    # but they wouldn't be linked to any sample alias, e.g. :   
+    # select count(*) from submission_sample ss left join
+    # submission_samplealias ssa on ssa.sample_id=ss.id 
+    # where biosample_id is not null and ssa.id is null;
+
+    # first we can use the fact that for biosamples submitted at NCBI
+    # the biosample alias is simply "SAMN"+biosample_id
+
+    known_biosample_ids_from_alias = get_biosample_ids_from_samplealias(db)
+
+    known_biosample_ids = set(known_biosample_from_sample) | set(known_biosample_ids_from_alias)
 
     for date_ids, page_num, pages_total in entrez.get_biosample_ids(relative_date):
         log.info(
@@ -262,7 +292,7 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
 
         # Make sure items in both list are all ints
         processing = list(
-            set([int(x) for x in date_ids])-set(known_biosample_ids)
+            set([int(x) for x in date_ids])-known_biosample_ids
         )
 
         log.info(
@@ -276,6 +306,7 @@ def main(db: Connection, entrez: EntrezAdvanced, relative_date: int):
             processing,
             normalization_data
             )
+        
         date_totals.merge(batch_totals)
         db.commit()
 

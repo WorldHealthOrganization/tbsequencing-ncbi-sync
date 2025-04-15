@@ -60,8 +60,16 @@ def save_samples(db: Connection, samples: list[Sample]) -> Stats:
     for sample in samples:
         # add check here that samples should not go into new sample if their alias
         # already exist
-        if sample.db_sample_id or get_samples_by_sample_aliases([alias.name for alias in sample.additional_aliases]):
+        if sample.db_sample_id:
             existing_samples.append(sample)
+        elif get_samples_by_sample_aliases(db, [alias.name for alias in sample.additional_aliases]):
+            log.warning(
+                "Detected biosample %s which was merged to another biosample already. " 
+                "Skipping insertion.",
+                sample.biosample_id
+            )
+            totals.increment("biosample_already_merged_by_md5")
+            pass
         else:
             new_samples.append(sample)
 

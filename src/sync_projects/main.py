@@ -20,7 +20,7 @@ def link_to_bioproject(db: Connection, entrez: EntrezAdvanced, linked_object: st
     page_num = 0
     last_id = 0
     totals = Stats()
-    entrez.DEFAULT_PER_PAGE = 500
+    entrez.DEFAULT_PER_PAGE = 250
 
     total_count = sql.get_object_without_project_imported_count(
         db, tmp_package_id, linked_object
